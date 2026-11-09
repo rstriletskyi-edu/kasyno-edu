@@ -12,141 +12,127 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  frontend:
-    name: Frontend checks
+  changes:
+    name: Detect changes
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 5
     permissions:
-      contents: read
       pull-requests: read
-
-    defaults:
-      run:
-        working-directory: frontend
-
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
     steps:
-      # Keep the workflow running for every PR so required checks can complete.
-      - name: Detect changed files
-        id: changes
+      - name: Check changed directories
+        id: filter
         uses: dorny/paths-filter@v4
         with:
-          predicate-quantifier: every
           filters: |
             frontend:
               - 'frontend/**'
-              - '!frontend/**/*.md'
-              - '!frontend/**/*.mdx'
-              - '!frontend/docs/**'
-            workflow:
-              - '.github/workflows/ci.yml'
+            backend:
+              - 'backend/**'
 
-      - name: Skip frontend commands for unrelated changes
-        if: steps.changes.outputs.frontend != 'true' && steps.changes.outputs.workflow != 'true'
-        run: echo "No frontend code or configuration changed. Frontend commands are skipped."
-        working-directory: .
-
+  frontend:
+    name: Frontend checks
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
       - name: Check out repository
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: "24.15.0"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Set project npm version
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
+      - name: Set npm version
         run: npm install --global npm@12.0.1
 
       - name: Install dependencies
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npm ci
 
       - name: Check formatting
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npx prettier src --check
 
-      - name: Run unit tests
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
+      - name: Run tests
         run: npm test -- --watch=false
 
-      - name: Build production application
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
+      - name: Build application
         run: npm run build -- --configuration production
 
-  # backend:
-  #   name: Backend checks
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 15
+  backend:
+    name: Backend checks
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POETRY_NO_INTERACTION: "1"
+      POETRY_VIRTUALENVS_IN_PROJECT: "true"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-  #   permissions:
-  #     contents: read
-  #     pull-requests: read
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
 
-  #   env:
-  #     POETRY_NO_INTERACTION: "1"
-  #     POETRY_VIRTUALENVS_IN_PROJECT: "true"
+      - name: Install Poetry
+        run: python -m pip install "poetry==2.5.0"
 
-  #   defaults:
-  #     run:
-  #       working-directory: backend
+      - name: Validate dependencies
+        run: poetry check --lock
 
-  #   steps:
-  #     # Complete this required check even when backend commands are unnecessary.
-  #     - name: Detect changed files
-  #       id: changes
-  #       uses: dorny/paths-filter@v4
-  #       with:
-  #         predicate-quantifier: every
-  #         filters: |
-  #           backend:
-  #             - 'backend/**'
-  #             - '!backend/**/*.md'
-  #             - '!backend/**/*.mdx'
-  #             - '!backend/docs/**'
-  #           workflow:
-  #             - '.github/workflows/ci.yml'
+      - name: Install dependencies
+        run: poetry install --with dev --no-root --no-ansi
 
-  #     - name: Skip backend commands for unrelated changes
-  #       if: steps.changes.outputs.backend != 'true' && steps.changes.outputs.workflow != 'true'
-  #       run: echo "No backend code or configuration changed. Backend commands are skipped."
-  #       working-directory: .
+      - name: Check Python syntax
+        run: poetry run python -m compileall -q src tests
 
-  #     - name: Check out repository
-  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-  #       uses: actions/checkout@v7
-  #       with:
-  #         persist-credentials: false
+      - name: Run tests
+        run: poetry run pytest
 
-  #     - name: Set up Python
-  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-  #       uses: actions/setup-python@v7
-  #       with:
-  #         python-version: "3.13"
+  ci-gate:
+    name: CI Gate
+    needs: [changes, frontend, backend]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify job statuses
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+          BACKEND: ${{ needs.backend.result }}
+        run: |
+          if [[ "$CHANGES" != "success" ]]; then
+            echo "Change detection failed or was cancelled."
+            exit 1
+          fi
 
-  #     - name: Install Poetry
-  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-  #       run: python -m pip install "poetry==2.5.0"
+          for result in "$FRONTEND" "$BACKEND"; do
+            case "$result" in
+              success|skipped) ;;
+              *)
+                echo "A required check failed or was cancelled."
+                exit 1
+                ;;
+            esac
+          done
 
-  #     - name: Validate project configuration and lockfile
-  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-  #       run: poetry check --lock
-
-  #     - name: Install backend and test dependencies
-  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-  #       run: poetry install --with dev --no-root --no-ansi
-
-  #     - name: Check Python syntax
-  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-  #       run: poetry run python -m compileall -q src tests
-
-  #     - name: Run backend tests
-  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-  #       run: poetry run pytest
-
+          echo "All applicable checks passed."
