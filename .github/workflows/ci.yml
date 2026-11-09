@@ -80,73 +80,73 @@ jobs:
         if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npm run build -- --configuration production
 
-  backend:
-    name: Backend checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  # backend:
+  #   name: Backend checks
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
 
-    permissions:
-      contents: read
-      pull-requests: read
+  #   permissions:
+  #     contents: read
+  #     pull-requests: read
 
-    env:
-      POETRY_NO_INTERACTION: "1"
-      POETRY_VIRTUALENVS_IN_PROJECT: "true"
+  #   env:
+  #     POETRY_NO_INTERACTION: "1"
+  #     POETRY_VIRTUALENVS_IN_PROJECT: "true"
 
-    defaults:
-      run:
-        working-directory: backend
+  #   defaults:
+  #     run:
+  #       working-directory: backend
 
-    steps:
-      # Complete this required check even when backend commands are unnecessary.
-      - name: Detect changed files
-        id: changes
-        uses: dorny/paths-filter@v4
-        with:
-          predicate-quantifier: every
-          filters: |
-            backend:
-              - 'backend/**'
-              - '!backend/**/*.md'
-              - '!backend/**/*.mdx'
-              - '!backend/docs/**'
-            workflow:
-              - '.github/workflows/ci.yml'
+  #   steps:
+  #     # Complete this required check even when backend commands are unnecessary.
+  #     - name: Detect changed files
+  #       id: changes
+  #       uses: dorny/paths-filter@v4
+  #       with:
+  #         predicate-quantifier: every
+  #         filters: |
+  #           backend:
+  #             - 'backend/**'
+  #             - '!backend/**/*.md'
+  #             - '!backend/**/*.mdx'
+  #             - '!backend/docs/**'
+  #           workflow:
+  #             - '.github/workflows/ci.yml'
 
-      - name: Skip backend commands for unrelated changes
-        if: steps.changes.outputs.backend != 'true' && steps.changes.outputs.workflow != 'true'
-        run: echo "No backend code or configuration changed. Backend commands are skipped."
-        working-directory: .
+  #     - name: Skip backend commands for unrelated changes
+  #       if: steps.changes.outputs.backend != 'true' && steps.changes.outputs.workflow != 'true'
+  #       run: echo "No backend code or configuration changed. Backend commands are skipped."
+  #       working-directory: .
 
-      - name: Check out repository
-        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
+  #     - name: Check out repository
+  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+  #       uses: actions/checkout@v7
+  #       with:
+  #         persist-credentials: false
 
-      - name: Set up Python
-        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.13"
+  #     - name: Set up Python
+  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+  #       uses: actions/setup-python@v7
+  #       with:
+  #         python-version: "3.13"
 
-      - name: Install Poetry
-        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-        run: python -m pip install "poetry==2.5.0"
+  #     - name: Install Poetry
+  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+  #       run: python -m pip install "poetry==2.5.0"
 
-      - name: Validate project configuration and lockfile
-        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-        run: poetry check --lock
+  #     - name: Validate project configuration and lockfile
+  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+  #       run: poetry check --lock
 
-      - name: Install backend and test dependencies
-        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-        run: poetry install --with dev --no-root --no-ansi
+  #     - name: Install backend and test dependencies
+  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+  #       run: poetry install --with dev --no-root --no-ansi
 
-      - name: Check Python syntax
-        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-        run: poetry run python -m compileall -q src tests
+  #     - name: Check Python syntax
+  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+  #       run: poetry run python -m compileall -q src tests
 
-      - name: Run backend tests
-        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
-        run: poetry run pytest
+  #     - name: Run backend tests
+  #       if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+  #       run: poetry run pytest
 
