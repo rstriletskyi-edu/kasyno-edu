@@ -2,12 +2,22 @@
 
 The [CI workflow](../../.github/workflows/ci.yml) runs only for pull requests targeting `main`: when opened, reopened, or updated with new commits. It checks code before merging and does not deploy the application.
 
+## Workflow files
+
+| File | Responsibility |
+| --- | --- |
+| [ci.yml](../../.github/workflows/ci.yml) | Starts on PRs, detects changed folders, calls the relevant checks, and runs CI Gate. |
+| [ci-frontend.yml](../../.github/workflows/ci-frontend.yml) | Reusable workflow containing frontend checks. |
+| [ci-backend.yml](../../.github/workflows/ci-backend.yml) | Reusable workflow containing backend checks. |
+
+Only `ci.yml` listens for PR events. The other files use `workflow_call`, so they run when `ci.yml` calls them. Edit the corresponding file to maintain each project's checks.
+
 ```mermaid
 flowchart TD
-    A["Detect changes — max 5 min"]
-    B["Frontend checks — max 15 min"]
-    C["Backend checks — max 15 min"]
-    D["CI Gate — max 5 min"]
+    A["ci.yml: Detect changes<br/>Max 5 min"]
+    B["ci-frontend.yml: Frontend checks<br/>Max 15 min"]
+    C["ci-backend.yml: Backend checks<br/>Max 15 min"]
+    D["ci.yml: CI Gate<br/>Max 5 min"]
     A --> B
     A --> C
     B --> D
@@ -21,7 +31,7 @@ flowchart TD
 3. **Backend checks** run when anything in `backend/` changes: validate the Poetry configuration and lockfile, install dependencies, check Python syntax, and run pytest.
 4. **CI Gate** waits for the results. It passes when change detection succeeds and both project jobs pass or are intentionally skipped. Failures and cancellations make it fail.
 
-If only files outside those folders change, such as `docs/` or `ci.yml`, both project jobs are skipped. Backend checks require the Python project files when triggered.
+If only files outside those folders change, such as `docs/` or any file in `.github/workflows/`, both project jobs are skipped. A CI-only PR therefore does not execute the frontend/backend commands. Backend checks require the Python project files when triggered.
 
 ## Timing and results
 
