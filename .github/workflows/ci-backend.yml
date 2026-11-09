@@ -1,0 +1,44 @@
+name: Backend CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POETRY_NO_INTERACTION: "1"
+      POETRY_VIRTUALENVS_IN_PROJECT: "true"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: python -m pip install "poetry==2.5.0"
+
+      - name: Validate dependencies
+        run: poetry check --lock
+
+      - name: Install dependencies
+        run: poetry install --with dev --no-root --no-ansi
+
+      - name: Check Python syntax
+        run: poetry run python -m compileall -q src tests
+
+      - name: Run tests
+        run: poetry run pytest
