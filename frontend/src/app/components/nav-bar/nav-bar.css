@@ -1,0 +1,63 @@
+.casino-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 70px;
+  padding: 0 30px;
+  background-color: #001f3f;
+  border-bottom: 4px solid #000000;
+  box-sizing: border-box;
+  font-family: sans-serif;
+  color: #ffffff;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.logo-icon {
+  font-size: 1.8rem;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-wallet {
+  background-color: #0080ff;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 2px solid #000000;
+  font-weight: bold;
+  font-size: 1.1rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.logout-btn {
+  background-color: #d80101a1;
+  color: #ffffff;
+  border: 2px solid #000000;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #ff1a1a;
+}
+
+.logout-btn:active {
+  transform: scale(0.95);
+}
