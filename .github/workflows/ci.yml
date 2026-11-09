@@ -7,21 +7,53 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend:
     name: Frontend checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    permissions:
+      contents: read
+      pull-requests: read
+
     defaults:
       run:
         working-directory: frontend
 
     steps:
+      # Keep the workflow running for every PR so required checks can complete.
+      - name: Detect changed files
+        id: changes
+        uses: dorny/paths-filter@v4
+        with:
+          predicate-quantifier: every
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '!frontend/**/*.md'
+              - '!frontend/**/*.mdx'
+              - '!frontend/docs/**'
+            workflow:
+              - '.github/workflows/ci.yml'
+
+      - name: Skip frontend commands for unrelated changes
+        if: steps.changes.outputs.frontend != 'true' && steps.changes.outputs.workflow != 'true'
+        run: echo "No frontend code or configuration changed. Frontend commands are skipped."
+        working-directory: .
+
       - name: Check out repository
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: "24.15.0"
@@ -29,18 +61,22 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Set project npm version
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npm install --global npm@12.0.1
 
       - name: Install dependencies
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npm ci
 
       - name: Check formatting
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npx prettier src --check
 
       - name: Run unit tests
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npm test -- --watch=false
 
       - name: Build production application
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: npm run build -- --configuration production
-
 
