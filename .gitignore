@@ -43,3 +43,14 @@ Thumbs.db
 
 
 # PYTHON
+
+# Virtualenv and caches
+/backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Secrets
+/backend/.env
+/backend/credentials/
+*firebase-adminsdk*.json
