@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  background-color: #1d3162;
+  min-height: calc(100vh - 70px);
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+/* Poprawione nazwy selektorów na rzeczywiste tagi komponentów! */
+learning-section,
+game-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 200%;
+}
+
+/* Skoro mamy grid z gapem, pionowy separator między kolumnami robi bałagan - lepiej go ukryć */
+.horizontal-separator {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .split-view {
+    grid-template-columns: 1fr;
+  }
+}
