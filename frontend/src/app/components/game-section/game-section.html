@@ -3,11 +3,11 @@
     <div class="icon-wrapper">
       <span>🎰</span>
     </div>
-    <h2>Kasyno & Gry</h2>
+    <h2>Kasyno &amp; Gry</h2>
   </div>
 
   <p class="description">
-    GAMBLINGGGGGGGGGGGGGG
+    Wybierz grę i sprawdź swoje szczęście! Graj odpowiedzialnie — to tylko żetony edukacyjne.
   </p>
 
   <div class="game-badges">
@@ -16,5 +16,19 @@
     <span class="badge">Slots</span>
   </div>
 
-  <button class="action-btn">Zagraj teraz 🎲</button>
+  <div class="dropdown-wrapper">
+    <button class="dropdown-toggle" (click)="toggleDropdown()">
+      Wybierz grę 🎲
+      <span class="dropdown-arrow" [class.open]="dropdownOpen()">▾</span>
+    </button>
+    @if (dropdownOpen()) {
+      <ul class="dropdown-menu">
+        @for (game of games; track game.name) {
+          <li class="dropdown-item">
+            <a href="#">{{ game.icon }} {{ game.name }}</a>
+          </li>
+        }
+      </ul>
+    }
+  </div>
 </div>

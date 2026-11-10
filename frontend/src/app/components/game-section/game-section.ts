@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 
 @Component({
   imports: [],
@@ -6,4 +6,16 @@ import { Component } from '@angular/core';
   styleUrl: './game-section.css',
   templateUrl: './game-section.html',
 })
-export class GameSection {}
+export class GameSection {
+  dropdownOpen = signal(false);
+
+  games = [
+    { name: 'Blackjack', icon: '🃏' },
+    { name: 'Ruletka', icon: '🎡' },
+    { name: 'Jednoręki bandyta', icon: '🎰' },
+  ];
+
+  toggleDropdown() {
+    this.dropdownOpen.update(v => !v);
+  }
+}
