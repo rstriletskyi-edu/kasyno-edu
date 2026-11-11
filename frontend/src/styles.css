@@ -1,11 +1,11 @@
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 body {
-    margin: 0;
-    background-color: #1d3162;
-    font-family: 'Inter', sans-serif;
-    color: #ffffff;
-    min-height: 100vh;
+  margin: 0;
+  background-color: #1d3162;
+  font-family: 'Inter', sans-serif;
+  color: #ffffff;
+  min-height: 100vh;
 }

@@ -47,7 +47,9 @@
   text-decoration: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .nav-btn:hover {
@@ -87,7 +89,9 @@
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .logout-btn:hover {

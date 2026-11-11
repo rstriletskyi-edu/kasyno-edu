@@ -16,6 +16,6 @@ export class GameSection {
   ];
 
   toggleDropdown() {
-    this.dropdownOpen.update(v => !v);
+    this.dropdownOpen.update((v) => !v);
   }
 }

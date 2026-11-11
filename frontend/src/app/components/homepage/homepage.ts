@@ -7,4 +7,4 @@ import { LearningSection } from '../learning-section/learning-section';
   styleUrl: './homepage.css',
   templateUrl: './homepage.html',
 })
-export class Homepage { }
+export class Homepage {}

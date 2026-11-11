@@ -14,10 +14,8 @@ export class LearningSection {
 
   getHealth() {
     this.healthService.getHealth().subscribe({
-        next: (healthResponse) => this.healthCheckResult.set(healthResponse.status),
-        error: (err) => console.error(err)
-      });
-    ;
+      next: (healthResponse) => this.healthCheckResult.set(healthResponse.status),
+      error: (err) => console.error(err),
+    });
   }
-
 }
