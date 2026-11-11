@@ -54,3 +54,7 @@ __pycache__/
 /backend/.env
 /backend/credentials/
 *firebase-adminsdk*.json
+
+**/.gemini/config/mcp_config.json.txt
+**/skills-lock.json
+**/.agents/**

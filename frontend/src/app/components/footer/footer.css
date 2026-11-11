@@ -1,0 +1,20 @@
+:host {
+  display: block;
+}
+
+.footer-body {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  background-color: #001f3f;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-body p {
+  margin: 0;
+}

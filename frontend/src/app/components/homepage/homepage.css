@@ -1,0 +1,33 @@
+:host {
+  display: block;
+  padding: 0.5rem 0.5rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0;
+  align-items: stretch;
+  min-height: calc(100vh - 100px);
+}
+
+learning-section,
+game-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.horizontal-separator {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .split-view {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+}

@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { HealthService } from '../../services/health.service';
 
 @Component({
   imports: [],
@@ -6,4 +7,15 @@ import { Component } from '@angular/core';
   styleUrl: './learning-section.css',
   templateUrl: './learning-section.html',
 })
-export class LearningSection {}
+export class LearningSection {
+  protected healthService = inject(HealthService);
+
+  healthCheckResult = signal('good');
+
+  getHealth() {
+    this.healthService.getHealth().subscribe({
+      next: (healthResponse) => this.healthCheckResult.set(healthResponse.status),
+      error: (err) => console.error(err),
+    });
+  }
+}
