@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { Homepage } from './components/homepage/homepage';
+import { authGuard } from './guards/auth.guard';
 
 const baseTitle: string = 'Kasyno Edu';
 
@@ -17,7 +18,7 @@ export const routes: Routes = [
     title: `${baseTitle} - Account`,
     pathMatch: 'full',
     loadComponent: () => import('./components/dashboard/dashboard').then((c) => c.Dashboard),
-    //canActivate: [authGuard]
+    canActivate: [authGuard],
   },
   {
     path: 'auth',

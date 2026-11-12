@@ -1,1 +1,18 @@
-<p>account-activation works!</p>
+<h1>Potwierdź adres e-mail</h1>
+<p>
+  Wysłaliśmy link weryfikacyjny na adres <strong>{{ email || 'podany przy rejestracji' }}</strong>.
+  Kliknij go, a następnie sprawdź status konta.
+</p>
+@if (errorMessage) {
+  <p class="message error" role="alert">{{ errorMessage }}</p>
+}
+@if (successMessage) {
+  <p class="message success" role="status">{{ successMessage }}</p>
+}
+<button type="button" [disabled]="isSubmitting" (click)="checkVerification()">
+  Sprawdź status
+</button>
+<button type="button" [disabled]="isSubmitting" (click)="resendEmail()">
+  Wyślij link ponownie
+</button>
+<p><a routerLink="/auth/login">Wróć do logowania</a></p>

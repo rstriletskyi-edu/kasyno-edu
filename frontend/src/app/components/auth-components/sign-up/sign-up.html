@@ -1,1 +1,36 @@
-<p>sign-up works!</p>
+<h1>Rejestracja</h1>
+<form (ngSubmit)="submit()" #signUpForm="ngForm">
+  <label>
+    E-mail
+    <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+  </label>
+  <label>
+    Hasło
+    <input
+      type="password"
+      name="password"
+      [(ngModel)]="password"
+      autocomplete="new-password"
+      minlength="6"
+      required
+    />
+  </label>
+  <label>
+    Powtórz hasło
+    <input
+      type="password"
+      name="confirmPassword"
+      [(ngModel)]="confirmPassword"
+      autocomplete="new-password"
+      minlength="6"
+      required
+    />
+  </label>
+  @if (errorMessage) {
+    <p class="message error" role="alert">{{ errorMessage }}</p>
+  }
+  <button type="submit" [disabled]="signUpForm.invalid || isSubmitting">
+    {{ isSubmitting ? 'Tworzenie konta…' : 'Utwórz konto' }}
+  </button>
+</form>
+<p>Masz już konto? <a routerLink="/auth/login">Zaloguj się</a></p>
