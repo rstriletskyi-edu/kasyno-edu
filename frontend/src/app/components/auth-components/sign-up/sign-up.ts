@@ -7,7 +7,7 @@ import { FirebaseAuthService, firebaseErrorMessage } from '../../../services/fir
 @Component({
   imports: [FormsModule, RouterLink],
   selector: 'sign-up',
-  styleUrl: '../auth.css',
+  styleUrls: ['../auth.css', './sign-up.css'],
   templateUrl: './sign-up.html',
 })
 export class SignUp {
@@ -31,6 +31,32 @@ export class SignUp {
     try {
       await this.auth.signUp(this.email, this.password);
       await this.router.navigate(['/auth/account-activation']);
+    } catch (error) {
+      this.errorMessage = firebaseErrorMessage(error);
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async signUpWithGoogle(): Promise<void> {
+    this.errorMessage = '';
+    this.isSubmitting = true;
+    try {
+      const user = await this.auth.signInWithGoogle();
+      await this.router.navigate([user.emailVerified ? '/dashboard' : '/auth/account-activation']);
+    } catch (error) {
+      this.errorMessage = firebaseErrorMessage(error);
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async signUpWithFacebook(): Promise<void> {
+    this.errorMessage = '';
+    this.isSubmitting = true;
+    try {
+      const user = await this.auth.signInWithFacebook();
+      await this.router.navigate([user.emailVerified ? '/dashboard' : '/auth/account-activation']);
     } catch (error) {
       this.errorMessage = firebaseErrorMessage(error);
     } finally {

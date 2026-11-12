@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { FirebaseError, getApp, getApps, initializeApp } from 'firebase/app';
 import {
   Auth,
+  FacebookAuthProvider,
+  GoogleAuthProvider,
   User,
   createUserWithEmailAndPassword,
   getAuth,
@@ -10,6 +12,7 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
 } from 'firebase/auth';
 
@@ -24,6 +27,18 @@ export class FirebaseAuthService {
 
   async signIn(email: string, password: string): Promise<User> {
     const result = await signInWithEmailAndPassword(this.auth, email, password);
+    return result.user;
+  }
+
+  async signInWithGoogle(): Promise<User> {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(this.auth, provider);
+    return result.user;
+  }
+
+  async signInWithFacebook(): Promise<User> {
+    const provider = new FacebookAuthProvider();
+    const result = await signInWithPopup(this.auth, provider);
     return result.user;
   }
 
@@ -69,9 +84,7 @@ export class FirebaseAuthService {
 
   private get auth(): Auth {
     if (!this.isConfigured) {
-      throw new Error(
-        'Firebase nie jest skonfigurowany. Uzupełnij dane w pliku environment.',
-      );
+      throw new Error('Firebase nie jest skonfigurowany. Uzupełnij dane w pliku environment.');
     }
 
     const app = getApps().some((candidate) => candidate.name === 'kasyno-edu')
@@ -94,6 +107,14 @@ export function firebaseErrorMessage(error: unknown): string {
         return 'Hasło jest za słabe. Użyj co najmniej 6 znaków.';
       case 'auth/invalid-email':
         return 'Podaj prawidłowy adres e-mail.';
+      case 'auth/popup-closed-by-user':
+        return 'Logowanie zostało anulowane (zamknięto okno).';
+      case 'auth/cancelled-popup-request':
+        return 'Przerwano poprzednie żądanie logowania.';
+      case 'auth/popup-blocked':
+        return 'Wyskakujące okienko logowania zostało zablokowane przez przeglądarkę.';
+      case 'auth/account-exists-with-different-credential':
+        return 'Konto z tym adresem e-mail już istnieje przy użyciu innego dostawcy.';
       case 'auth/too-many-requests':
         return 'Zbyt wiele prób. Spróbuj ponownie za chwilę.';
       case 'auth/network-request-failed':

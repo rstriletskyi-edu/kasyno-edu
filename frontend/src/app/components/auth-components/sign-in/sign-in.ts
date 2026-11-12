@@ -32,4 +32,32 @@ export class SignIn {
       this.isSubmitting = false;
     }
   }
+
+  async signInWithGoogle(): Promise<void> {
+    this.errorMessage = '';
+    this.isSubmitting = true;
+
+    try {
+      const user = await this.auth.signInWithGoogle();
+      await this.router.navigate([user.emailVerified ? '/dashboard' : '/auth/account-activation']);
+    } catch (error) {
+      this.errorMessage = firebaseErrorMessage(error);
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async signInWithFacebook(): Promise<void> {
+    this.errorMessage = '';
+    this.isSubmitting = true;
+
+    try {
+      const user = await this.auth.signInWithFacebook();
+      await this.router.navigate([user.emailVerified ? '/dashboard' : '/auth/account-activation']);
+    } catch (error) {
+      this.errorMessage = firebaseErrorMessage(error);
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
 }

@@ -58,3 +58,7 @@ __pycache__/
 **/.gemini/config/mcp_config.json.txt
 **/skills-lock.json
 **/.agents/**
+
+# Ignorowanie kluczy Firebase
+frontend/src/environments/environment*.ts
+!frontend/src/environments/environment.example.ts
