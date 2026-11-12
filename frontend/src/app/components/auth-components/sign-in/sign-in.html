@@ -1,1 +1,25 @@
-<p>sign-in works!</p>
+<h1>Logowanie</h1>
+<form (ngSubmit)="submit()" #signInForm="ngForm">
+  <label>
+    E-mail
+    <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+  </label>
+  <label>
+    Hasło
+    <input
+      type="password"
+      name="password"
+      [(ngModel)]="password"
+      autocomplete="current-password"
+      required
+    />
+  </label>
+  @if (errorMessage) {
+    <p class="message error" role="alert">{{ errorMessage }}</p>
+  }
+  <button type="submit" [disabled]="signInForm.invalid || isSubmitting">
+    {{ isSubmitting ? 'Logowanie…' : 'Zaloguj się' }}
+  </button>
+</form>
+<p><a routerLink="/auth/password-reset">Nie pamiętasz hasła?</a></p>
+<p>Nie masz konta? <a routerLink="/auth/register">Zarejestruj się</a></p>
