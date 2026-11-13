@@ -34,9 +34,7 @@ jobs:
         run: npm ci
 
       - name: Prepare environment configuration
-        run: |
-          cp src/environments/environment.example.ts src/environments/environment.ts
-          cp src/environments/environment.example.ts src/environments/environment.development.ts
+        run: npm run config
 
       - name: Check formatting
         run: npx prettier src --check

@@ -59,6 +59,8 @@ __pycache__/
 **/skills-lock.json
 **/.agents/**
 
-# Ignorowanie kluczy Firebase
-frontend/src/environments/environment*.ts
-!frontend/src/environments/environment.example.ts
+# Local frontend settings and generated browser configuration
+/frontend/.env
+/frontend/.env.*
+!/frontend/.env.example
+/frontend/src/environments/environment.config.ts

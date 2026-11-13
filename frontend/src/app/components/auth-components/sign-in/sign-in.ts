@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { FirebaseAuthService, firebaseErrorMessage } from '../../../services/firebase-auth.service';
 
@@ -13,6 +13,7 @@ import { FirebaseAuthService, firebaseErrorMessage } from '../../../services/fir
 export class SignIn {
   private readonly auth = inject(FirebaseAuthService);
   private readonly router = inject(Router);
+  readonly accountVerified = inject(ActivatedRoute).snapshot.queryParamMap.get('verified') === '1';
 
   email = '';
   password = '';

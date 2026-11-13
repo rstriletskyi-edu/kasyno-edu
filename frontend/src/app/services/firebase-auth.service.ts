@@ -54,7 +54,14 @@ export class FirebaseAuthService {
 
   async refreshUser(user: User): Promise<User> {
     await reload(user);
+    if (user.emailVerified) await user.getIdToken(true);
     return user;
+  }
+
+  async getIdToken(): Promise<string | null> {
+    if (!this.isConfigured) return null;
+    const user = await this.getCurrentUser();
+    return user ? user.getIdToken() : null;
   }
 
   sendPasswordReset(email: string): Promise<void> {

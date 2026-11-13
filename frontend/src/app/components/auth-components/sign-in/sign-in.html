@@ -1,4 +1,7 @@
 <h1>Logowanie</h1>
+@if (accountVerified) {
+  <p class="message success" role="status">Adres e-mail został potwierdzony. Zaloguj się.</p>
+}
 <form (ngSubmit)="submit()" #signInForm="ngForm">
   <label>
     E-mail

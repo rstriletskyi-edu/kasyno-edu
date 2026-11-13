@@ -3,9 +3,14 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "config": "node generate-env.mjs",
+    "prestart": "npm run config",
     "start": "ng serve",
+    "prebuild": "npm run config",
     "build": "ng build",
+    "prewatch": "npm run config",
     "watch": "ng build --watch --configuration development",
+    "pretest": "npm run config",
     "test": "ng test"
   },
   "private": true,

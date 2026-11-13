@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     app_name: str = "Kasyno Edu API"
     environment: str = "development"
     api_prefix: str = "/api"
-    cors_origins: list[str] = ["http://localhost:4200"]
+    cors_origins: list[str] = ["http://localhost:4200", "http://127.0.0.1:4200"]
 
     firebase_credentials_path: Path = Path("credentials/firebase-service-account.json")
     firebase_project_id: str | None = None
