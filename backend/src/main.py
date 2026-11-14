@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.configs.settings import get_settings
-from src.routes import health
+from src.routes import flashcards, health
 from src.services.firebase_service import init_firebase
 from src.utils.exceptions import AppError
 
@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(AppError, app_error_handler)
 
     app.include_router(health.router, prefix=settings.api_prefix)
+    app.include_router(flashcards.router, prefix=settings.api_prefix)
 
     return app
 
