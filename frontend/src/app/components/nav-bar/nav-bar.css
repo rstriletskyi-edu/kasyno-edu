@@ -101,3 +101,23 @@
 .logout-btn:active {
   transform: scale(0.95);
 }
+
+.logout-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.log-out {
+  position: relative;
+}
+
+.logout-error {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: 18rem;
+  padding: 12px;
+  background: #ffffff;
+  color: #991b1b;
+  border-radius: 8px;
+}

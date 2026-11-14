@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.configs.settings import get_settings
-from src.routes import health
+from src.routes import auth, health
 from src.services.firebase_service import init_firebase
 from src.utils.exceptions import AppError
 
@@ -21,7 +21,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return JSONResponse(
+        status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers
+    )
 
 
 def create_app() -> FastAPI:
@@ -40,6 +42,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(AppError, app_error_handler)
 
     app.include_router(health.router, prefix=settings.api_prefix)
+    app.include_router(auth.router, prefix=settings.api_prefix)
 
     return app
 

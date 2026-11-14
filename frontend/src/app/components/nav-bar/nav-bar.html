@@ -15,7 +15,12 @@
       <span class="wallet-amount">100 🪙</span>
     </div>
     <div class="log-out">
-      <button class="logout-btn">Wyloguj 🚪</button>
+      <button type="button" class="logout-btn" (click)="logout()" [disabled]="isLoggingOut()">
+        {{ isLoggingOut() ? 'Wylogowywanie…' : 'Wyloguj 🚪' }}
+      </button>
+      @if (logoutError()) {
+        <p class="logout-error" role="alert">{{ logoutError() }}</p>
+      }
     </div>
   </div>
 </nav>
