@@ -1,4 +1,4 @@
-@if (!displayCardVisible()){
+@if (!displayCardVisible()) {
   <div class="learning-card">
     <div class="card-header">
       <div class="icon-wrapper">
@@ -12,15 +12,14 @@
     </p>
 
     <div class="button-wrapper">
-        <button class="start-button" (click)="goToDisplayCards()">Rozpocznij naukę</button>
-        <button class="leaderboard-button"><span> Tabela liderów </span></button>
+      <button class="start-button" (click)="goToDisplayCards()">Rozpocznij naukę</button>
+      <button class="leaderboard-button"><span> Tabela liderów </span></button>
 
       <!-- <div>
         <button (click)="getHealth()">Test Health</button>
       </div> -->
     </div>
   </div>
-}
-@else {
+} @else {
   <display-cards (returnToMenuEvent)="goBackToMenu()"></display-cards>
 }

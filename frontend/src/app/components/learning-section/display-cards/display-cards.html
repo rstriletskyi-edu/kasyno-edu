@@ -1,22 +1,23 @@
-  <div class="display-card">
-    <div class="display-card-header">
-      <h2>Pytanie #X</h2> <!-- TODO: Pobrać numer pytania z bazy danych -->
-    </div>
+<div class="display-card">
+  <div class="display-card-header">
+    <h2>Pytanie #X</h2>
+    <!-- TODO: Pobrać numer pytania z bazy danych -->
+  </div>
 
-    <div class="display-card-content">
-        <!-- TODO: Pobrać treść pytania z bazy danych -->
-      <p class="question-text">Treść pytania</p> 
-      <div class="answer-window">
-        <textarea placeholder="Wpisz swoją odpowiedź tutaj..."></textarea>
-      </div>
-    </div>
-    <div class="button-wrapper">
-        <button class="return-button" (click)="returnToMenu()"> Powrót do menu </button>
-        <!-- TODO: Dodać funkcjonalność przesyłania odpowiedzi -->
-        <button class="submit-button" (click)="submitAnswer()">Prześlij odpowiedź</button>
-
-      <!-- <div>
-        <button (click)="getHealth()">Test Health</button>
-      </div> -->
+  <div class="display-card-content">
+    <!-- TODO: Pobrać treść pytania z bazy danych -->
+    <p class="question-text">Treść pytania</p>
+    <div class="answer-window">
+      <textarea placeholder="Wpisz swoją odpowiedź tutaj..."></textarea>
     </div>
   </div>
+  <div class="button-wrapper">
+    <button class="return-button" (click)="returnToMenu()">Powrót do menu</button>
+    <!-- TODO: Dodać funkcjonalność przesyłania odpowiedzi -->
+    <button class="submit-button" (click)="submitAnswer()">Prześlij odpowiedź</button>
+
+    <!-- <div>
+        <button (click)="getHealth()">Test Health</button>
+      </div> -->
+  </div>
+</div>

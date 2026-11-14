@@ -11,7 +11,7 @@ export class DisplayCards {
 
   returnToMenu() {
     this.returnToMenuEvent.emit();
-  } 
+  }
 
   submitAnswer() {
     // Zaimplementuj logikę przesyłania odpowiedzi użytkownika
