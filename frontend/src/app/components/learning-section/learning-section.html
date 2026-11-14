@@ -1,22 +1,26 @@
-<div class="learning-card">
-  <div class="card-header">
-    <div class="icon-wrapper">
-      <span>📚</span>
+@if (!displayCardVisible()){
+  <div class="learning-card">
+    <div class="card-header">
+      <div class="icon-wrapper">
+        <span>📚</span>
+      </div>
+      <h2>Strefa Nauki</h2>
     </div>
-    <h2>Strefa Nauki</h2>
-  </div>
 
-  <p class="description">
-    Zdobywaj wiedzę, rozwiązuj quizy i zgarniaj dodatkowe darmowe żetony na grę!
-  </p>
+    <p class="description">
+      Zdobywaj wiedzę, rozwiązuj quizy i zgarniaj dodatkowe darmowe żetony na grę!
+    </p>
 
-  <div class="stats-row">
-    <div class="stat-item">
-      <span class="stat-value">+50 🪙</span>
-      <span class="stat-label">Żetonów do zdobycia</span>
+    <div class="button-wrapper">
+        <button class="start-button" (click)="goToDisplayCards()">Rozpocznij naukę</button>
+        <button class="leaderboard-button"><span> Tabela liderów </span></button>
+
+      <!-- <div>
+        <button (click)="getHealth()">Test Health</button>
+      </div> -->
     </div>
-    <!-- <div>
-      <button (click)="getHealth()">Test Health</button>
-    </div> -->
   </div>
-</div>
+}
+@else {
+  <display-cards (returnToMenuEvent)="goBackToMenu()"></display-cards>
+}

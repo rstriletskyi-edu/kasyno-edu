@@ -1,0 +1,127 @@
+:host {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.display-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 16px;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.25);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.display-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px -6px rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.display-card-header {
+  display: flex;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+}
+
+.display-card-header h2 {
+  display: flex;
+  text-align: center;
+  align-items: center;
+  gap: 14px;
+}
+
+.display-card-content {
+  background: linear-gradient(135deg, #000dff 0%, #6190ff 100%);
+  color: #000000;
+  border: 5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  height: 75%;
+  display: flex;
+  flex-direction: column;
+  font-size: 1.4rem;
+  line-height: 1.6;
+  margin: 5px;
+  padding: 10px;
+}
+
+.answer-window {
+    margin-top: auto;
+    justify-content: center;
+    align-self: center;
+    width: 99%;
+    display: flex;
+}
+.answer-window textarea {
+    background: linear-gradient(100deg, #ffffff 0%, #bbbbbb 100%);
+    color: #000000;
+    width: 100%;
+    border: 3px;
+    border-color: linear-gradient(100deg, #ffffff 0%, #bbbbbb 100%);
+    display: flex;
+    resize: none;
+    font-size: 1rem;
+}
+
+.button-wrapper {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.submit-button {
+  background-color: #10cc81;
+  color: white;
+  border: none;
+  width: auto;
+  height: auto;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.submit-button:hover {
+  background-color: #10ff81;
+  transform: translateY(-2px);
+}
+
+.return-button {
+  background-color: #cc0000;
+  color: white;
+  border: none;
+  width: auto;
+  height: auto;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.return-button:hover {
+  background-color: #ff0000;
+  transform: translateY(-2px);
+}
