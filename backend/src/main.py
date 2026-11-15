@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.configs.settings import get_settings
+from src.middlewares.security import RateLimiterMiddleware, SecurityHeadersMiddleware
 from src.routes import auth, health
 from src.services.firebase_service import init_firebase
 from src.utils.exceptions import AppError
@@ -26,7 +27,7 @@ async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
     )
 
 
-def create_app() -> FastAPI:
+def create_app(rate_limit_max: int = 100, rate_limit_window: int = 60) -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -37,6 +38,10 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(
+        RateLimiterMiddleware, max_requests=rate_limit_max, window_seconds=rate_limit_window
     )
 
     app.add_exception_handler(AppError, app_error_handler)
