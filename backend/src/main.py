@@ -8,7 +8,8 @@ from fastapi.responses import JSONResponse
 
 from src.configs.settings import get_settings
 from src.middlewares.security import RateLimiterMiddleware, SecurityHeadersMiddleware
-from src.routes import auth, health
+from src.routes import auth, health, llm
+from src.services.evaluation_service import EvaluationService
 from src.services.firebase_service import init_firebase
 from src.utils.exceptions import AppError
 
@@ -46,8 +47,10 @@ def create_app(rate_limit_max: int = 100, rate_limit_window: int = 60) -> FastAP
 
     app.add_exception_handler(AppError, app_error_handler)
 
+    app.state.evaluation_service = EvaluationService(settings)
     app.include_router(health.router, prefix=settings.api_prefix)
     app.include_router(auth.router, prefix=settings.api_prefix)
+    app.include_router(llm.router, prefix=settings.api_prefix)
 
     return app
 

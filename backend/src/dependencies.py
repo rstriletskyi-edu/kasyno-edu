@@ -1,9 +1,10 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.configs.settings import Settings, get_settings
 from src.models.auth import AuthenticatedUser
 from src.services.auth_service import AuthService
+from src.services.evaluation_service import EvaluationService
 from src.services.health_service import HealthService
 from src.services.firebase_service import get_firestore
 from src.services.user_service import UserService
@@ -38,3 +39,7 @@ def get_verified_user(user: AuthenticatedUser = Depends(get_current_user)) -> Au
 
 def get_user_service() -> UserService:
     return UserService(get_firestore())
+
+
+def get_evaluation_service(request: Request) -> EvaluationService:
+    return request.app.state.evaluation_service

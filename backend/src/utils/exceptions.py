@@ -38,3 +38,28 @@ class EmailNotVerifiedError(AppError):
 class ProfileUnavailableError(AppError):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     detail = "User profile service unavailable"
+
+
+class LlmNotConfiguredError(AppError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    detail = "LLM is not configured"
+
+
+class LlmSessionNotFoundError(AppError):
+    status_code = status.HTTP_404_NOT_FOUND
+    detail = "LLM session not found"
+
+
+class AnswerTooLongError(AppError):
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+    detail = "User answer exceeds the maximum length"
+
+
+class LlmTimeoutError(AppError):
+    status_code = status.HTTP_504_GATEWAY_TIMEOUT
+    detail = "LLM evaluation timed out"
+
+
+class LlmEvaluationError(AppError):
+    status_code = status.HTTP_502_BAD_GATEWAY
+    detail = "LLM evaluation failed"
