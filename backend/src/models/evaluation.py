@@ -7,6 +7,8 @@ EXPECTED_ANSWER_MAX_LENGTH = 4_000
 USER_ANSWER_MAX_LENGTH = 20_000
 EXPLANATION_MAX_LENGTH = 500
 API_KEY_MAX_LENGTH = 512
+PROVIDER_MAX_LENGTH = 32
+MODEL_MAX_LENGTH = 128
 
 
 class Verdict(StrEnum):
@@ -17,6 +19,8 @@ class Verdict(StrEnum):
 
 class LlmSessionCreateRequest(BaseModel):
     api_key: SecretStr | None = Field(default=None, max_length=API_KEY_MAX_LENGTH)
+    provider: str | None = Field(default=None, max_length=PROVIDER_MAX_LENGTH)
+    model: str | None = Field(default=None, max_length=MODEL_MAX_LENGTH)
 
 
 class LlmSessionResponse(BaseModel):

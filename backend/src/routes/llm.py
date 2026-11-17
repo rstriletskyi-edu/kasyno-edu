@@ -18,6 +18,10 @@ router = APIRouter(prefix="/llm", tags=["llm"])
     response_model=LlmSessionResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Open an LLM grading session",
+    description=(
+        "Optional provider and model override the server defaults for this session. "
+        "A blank value keeps LLM_PROVIDER or LLM_MODEL from the server configuration."
+    ),
     responses={
         401: {"description": "Missing or invalid Firebase ID token"},
         403: {"description": "Email verification required"},
@@ -31,8 +35,7 @@ def create_llm_session(
     payload: LlmSessionCreateRequest = Body(default_factory=LlmSessionCreateRequest),
 ) -> LlmSessionResponse:
     response.headers["Cache-Control"] = "no-store"
-    api_key = payload.api_key.get_secret_value() if payload.api_key is not None else None
-    return LlmSessionResponse(session_id=service.create_session(user.uid, api_key))
+    return LlmSessionResponse(session_id=service.create_session(user.uid, payload))
 
 
 @router.post(

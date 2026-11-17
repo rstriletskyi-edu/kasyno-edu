@@ -56,10 +56,14 @@ class FakeModel:
         self.calls = 0
         self.messages: list[SystemMessage | HumanMessage] | None = None
         self.seen_keys: list[str] = []
+        self.seen_providers: list[str] = []
+        self.seen_models: list[str] = []
         self.error: Exception | None = None
 
-    def bind(self, api_key: str) -> "FakeModel":
+    def bind(self, settings: Settings, api_key: str) -> "FakeModel":
         self.seen_keys.append(api_key)
+        self.seen_providers.append(settings.llm_provider)
+        self.seen_models.append(settings.llm_model)
         return self
 
     def with_structured_output(self, schema: type[EvaluationResult]) -> "FakeModel":
@@ -111,8 +115,7 @@ def harness(verify_token: Mock) -> Iterator[callable]:
         settings = settings_for(**overrides)
 
         def factory(factory_settings: Settings, api_key: str) -> FakeModel:
-            assert factory_settings is settings
-            return model.bind(api_key)
+            return model.bind(factory_settings, api_key)
 
         app = create_app()
         app.state.evaluation_service = EvaluationService(settings, model_factory=factory, clock=clock)
@@ -164,6 +167,56 @@ def test_session_key_is_not_echoed_and_grades_the_answer(harness: callable) -> N
     assert model.messages is not None
     assert "UNTRUSTED-ANSWER-MARKER" not in model.messages[0].content
     assert "<user_answer>\nUNTRUSTED-ANSWER-MARKER\n</user_answer>" in model.messages[1].content
+
+
+def test_session_can_select_provider_and_model(harness: callable) -> None:
+    client, model, _clock = harness(llm_api_key="env-key", llm_model="gpt-4o-mini")
+
+    created = client.post(
+        "/api/llm/sessions",
+        json={"provider": " OpenAI ", "model": " gpt-4.1-mini "},
+        headers=AUTH,
+    )
+    assert created.status_code == 201
+
+    graded = client.post(
+        f"/api/llm/sessions/{created.json()['session_id']}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH,
+    )
+
+    assert graded.status_code == 200
+    assert model.seen_providers == ["openai"]
+    assert model.seen_models == ["gpt-4.1-mini"]
+
+
+def test_blank_provider_and_model_use_server_defaults(harness: callable) -> None:
+    client, model, _clock = harness(llm_api_key="env-key", llm_model="gpt-4o-mini")
+
+    created = client.post(
+        "/api/llm/sessions",
+        json={"provider": "  ", "model": ""},
+        headers=AUTH,
+    )
+    session_id = created.json()["session_id"]
+    graded = client.post(
+        f"/api/llm/sessions/{session_id}/evaluations", json=GRADING_BODY, headers=AUTH
+    )
+
+    assert created.status_code == 201
+    assert graded.status_code == 200
+    assert model.seen_providers == ["openai"]
+    assert model.seen_models == ["gpt-4o-mini"]
+
+
+def test_unknown_provider_does_not_create_a_session(harness: callable) -> None:
+    client, model, _clock = harness(llm_api_key="env-key")
+
+    response = client.post("/api/llm/sessions", json={"provider": "nope"}, headers=AUTH)
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Unsupported LLM provider: nope"
+    assert model.calls == 0
 
 
 def test_blank_session_key_falls_back_to_env_key(harness: callable) -> None:

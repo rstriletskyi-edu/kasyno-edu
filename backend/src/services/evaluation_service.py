@@ -7,9 +7,9 @@ from uuid import uuid4
 from langchain_core.language_models import BaseChatModel
 
 from src.configs.settings import Settings
-from src.models.evaluation import EvaluationRequest, EvaluationResult
+from src.models.evaluation import EvaluationRequest, EvaluationResult, LlmSessionCreateRequest
 from src.services.evaluation_graph import EvaluationState, build_evaluation_graph
-from src.services.llm_factory import build_chat_model
+from src.services.llm_factory import build_chat_model, resolve_provider
 from src.utils.exceptions import (
     AppError,
     LlmEvaluationError,
@@ -22,8 +22,10 @@ from src.utils.exceptions import (
 @dataclass
 class _LlmSession:
     uid: str
-    api_key: str = field(repr=False)
+    provider: str
+    model: str
     expires_at: datetime
+    api_key: str = field(repr=False)
 
 
 class EvaluationService:
@@ -38,12 +40,17 @@ class EvaluationService:
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._sessions: dict[str, _LlmSession] = {}
 
-    def create_session(self, uid: str, api_key: str | None) -> str:
-        resolved = self._resolve_key(api_key)
+    def create_session(self, uid: str, payload: LlmSessionCreateRequest) -> str:
+        api_key = payload.api_key.get_secret_value() if payload.api_key is not None else None
+        resolved_key = self._resolve_key(api_key)
+        provider = resolve_provider(self._resolve_choice(payload.provider, self._settings.llm_provider))
+        model = self._resolve_choice(payload.model, self._settings.llm_model)
         session_id = str(uuid4())
         self._sessions[session_id] = _LlmSession(
             uid=uid,
-            api_key=resolved,
+            api_key=resolved_key,
+            provider=provider,
+            model=model,
             expires_at=self._clock() + timedelta(seconds=self._settings.llm_session_ttl_seconds),
         )
         return session_id
@@ -52,8 +59,11 @@ class EvaluationService:
         self, uid: str, session_id: str, payload: EvaluationRequest
     ) -> EvaluationResult:
         session = self._require_session(uid, session_id)
+        session_settings = self._settings.model_copy(
+            update={"llm_provider": session.provider, "llm_model": session.model}
+        )
         graph = build_evaluation_graph(
-            lambda: self._model_factory(self._settings, session.api_key),
+            lambda: self._model_factory(session_settings, session.api_key),
             self._settings.llm_max_answer_chars,
         )
         try:
@@ -90,6 +100,10 @@ class EvaluationService:
         if fallback:
             return fallback
         raise LlmNotConfiguredError("LLM API key is not configured")
+
+    def _resolve_choice(self, value: str | None, fallback: str) -> str:
+        candidate = (value or "").strip()
+        return candidate or fallback
 
     def _require_session(self, uid: str, session_id: str) -> _LlmSession:
         session = self._sessions.get(session_id)
