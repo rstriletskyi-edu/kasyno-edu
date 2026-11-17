@@ -4,7 +4,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.configs.settings import Settings, get_settings
 from src.models.auth import AuthenticatedUser
 from src.services.auth_service import AuthService
-from src.services.evaluation_service import EvaluationService
+from src.services.llm.evaluation_service import EvaluationService
 from src.services.health_service import HealthService
 from src.services.firebase_service import get_firestore
 from src.services.user_service import UserService

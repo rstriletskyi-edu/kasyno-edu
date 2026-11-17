@@ -10,9 +10,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.configs.settings import Settings
 from src.main import create_app
 from src.models.evaluation import EvaluationResult, Verdict
-from src.services.evaluation_graph import SYSTEM_PROMPT, build_grading_messages
-from src.services.evaluation_service import EvaluationService
-from src.services.llm_factory import build_chat_model
+from src.services.llm.evaluation_graph import SYSTEM_PROMPT, build_grading_messages
+from src.services.llm.evaluation_service import EvaluationService
+from src.services.llm.llm_factory import build_chat_model
 from src.utils.exceptions import LlmNotConfiguredError
 
 AUTH = {"Authorization": "Bearer test-token"}

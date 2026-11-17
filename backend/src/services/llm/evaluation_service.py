@@ -8,8 +8,8 @@ from langchain_core.language_models import BaseChatModel
 
 from src.configs.settings import Settings
 from src.models.evaluation import EvaluationRequest, EvaluationResult, LlmSessionCreateRequest
-from src.services.evaluation_graph import EvaluationState, build_evaluation_graph
-from src.services.llm_factory import build_chat_model, resolve_provider
+from src.services.llm.evaluation_graph import EvaluationState, build_evaluation_graph
+from src.services.llm.llm_factory import build_chat_model, resolve_provider
 from src.utils.exceptions import (
     AppError,
     LlmEvaluationError,

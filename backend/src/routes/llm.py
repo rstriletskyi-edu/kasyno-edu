@@ -8,7 +8,7 @@ from src.models.evaluation import (
     LlmSessionCreateRequest,
     LlmSessionResponse,
 )
-from src.services.evaluation_service import EvaluationService
+from src.services.llm.evaluation_service import EvaluationService
 
 router = APIRouter(prefix="/llm", tags=["llm"])
 

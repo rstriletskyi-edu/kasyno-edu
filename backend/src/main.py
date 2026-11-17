@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from src.configs.settings import get_settings
 from src.middlewares.security import RateLimiterMiddleware, SecurityHeadersMiddleware
 from src.routes import auth, health, llm
-from src.services.evaluation_service import EvaluationService
+from src.services.llm.evaluation_service import EvaluationService
 from src.services.firebase_service import init_firebase
 from src.utils.exceptions import AppError
 
