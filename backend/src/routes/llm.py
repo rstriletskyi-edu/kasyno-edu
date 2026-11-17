@@ -19,8 +19,8 @@ router = APIRouter(prefix="/llm", tags=["llm"])
     status_code=status.HTTP_201_CREATED,
     summary="Open an LLM grading session",
     description=(
-        "Optional provider and model override the server defaults for this session. "
-        "A blank value keeps LLM_PROVIDER or LLM_MODEL from the server configuration."
+        "Optional api_key, provider, model, and base_url (alias url) override the server defaults. "
+        "A blank value keeps the matching LLM_* value from the server configuration."
     ),
     responses={
         401: {"description": "Missing or invalid Firebase ID token"},

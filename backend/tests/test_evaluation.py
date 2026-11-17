@@ -58,12 +58,14 @@ class FakeModel:
         self.seen_keys: list[str] = []
         self.seen_providers: list[str] = []
         self.seen_models: list[str] = []
+        self.seen_base_urls: list[str | None] = []
         self.error: Exception | None = None
 
     def bind(self, settings: Settings, api_key: str) -> "FakeModel":
         self.seen_keys.append(api_key)
         self.seen_providers.append(settings.llm_provider)
         self.seen_models.append(settings.llm_model)
+        self.seen_base_urls.append(settings.llm_base_url)
         return self
 
     def with_structured_output(self, schema: type[EvaluationResult]) -> "FakeModel":
@@ -207,6 +209,72 @@ def test_blank_provider_and_model_use_server_defaults(harness: callable) -> None
     assert graded.status_code == 200
     assert model.seen_providers == ["openai"]
     assert model.seen_models == ["gpt-4o-mini"]
+
+
+def test_client_can_configure_ollama_without_server_defaults(harness: callable) -> None:
+    client, model, _clock = harness(llm_api_key=None, llm_base_url=None, llm_model="gpt-4o-mini")
+
+    created = client.post(
+        "/api/llm/sessions",
+        json={
+            "api_key": "ollama",
+            "provider": "ollama",
+            "model": "gemma3:4b",
+            "url": " http://ollama.example.test:11434/v1 ",
+        },
+        headers=AUTH,
+    )
+    assert created.status_code == 201
+
+    graded = client.post(
+        f"/api/llm/sessions/{created.json()['session_id']}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH,
+    )
+
+    assert graded.status_code == 200
+    assert model.seen_keys == ["ollama"]
+    assert model.seen_providers == ["ollama"]
+    assert model.seen_models == ["gemma3:4b"]
+    assert model.seen_base_urls == ["http://ollama.example.test:11434/v1"]
+
+
+def test_blank_url_uses_server_base_url(harness: callable) -> None:
+    client, model, _clock = harness(
+        llm_api_key="env-key", llm_base_url="https://server.example.test/v1"
+    )
+
+    created = client.post("/api/llm/sessions", json={"base_url": "  "}, headers=AUTH)
+    graded = client.post(
+        f"/api/llm/sessions/{created.json()['session_id']}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH,
+    )
+
+    assert created.status_code == 201
+    assert graded.status_code == 200
+    assert model.seen_base_urls == ["https://server.example.test/v1"]
+
+
+def test_ollama_without_url_does_not_create_a_session(harness: callable) -> None:
+    client, _model, _clock = harness(llm_api_key="env-key", llm_base_url=None)
+
+    response = client.post("/api/llm/sessions", json={"provider": "ollama"}, headers=AUTH)
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Model URL is required for provider ollama"
+
+
+def test_model_url_must_be_http(harness: callable) -> None:
+    client, _model, _clock = harness(llm_api_key="env-key")
+
+    response = client.post(
+        "/api/llm/sessions",
+        json={"url": "ftp://files.example.test/v1"},
+        headers=AUTH,
+    )
+
+    assert response.status_code == 422
 
 
 def test_unknown_provider_does_not_create_a_session(harness: callable) -> None:
@@ -377,6 +445,11 @@ def test_openai_factory_forwards_base_url(monkeypatch: pytest.MonkeyPatch) -> No
         "timeout": 12,
         "base_url": "https://example.test/v1",
     }
+
+
+def test_ollama_factory_requires_base_url() -> None:
+    with pytest.raises(LlmNotConfiguredError, match="Model URL is required"):
+        build_chat_model(settings_for(llm_provider="ollama", llm_base_url=None), "ollama")
 
 
 def test_factory_rejects_unknown_provider() -> None:

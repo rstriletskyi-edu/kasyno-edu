@@ -24,6 +24,7 @@ class _LlmSession:
     uid: str
     provider: str
     model: str
+    base_url: str | None
     expires_at: datetime
     api_key: str = field(repr=False)
 
@@ -45,12 +46,16 @@ class EvaluationService:
         resolved_key = self._resolve_key(api_key)
         provider = resolve_provider(self._resolve_choice(payload.provider, self._settings.llm_provider))
         model = self._resolve_choice(payload.model, self._settings.llm_model)
+        base_url = self._resolve_base_url(payload.base_url)
+        if provider == "ollama" and not base_url:
+            raise LlmNotConfiguredError("Model URL is required for provider ollama")
         session_id = str(uuid4())
         self._sessions[session_id] = _LlmSession(
             uid=uid,
             api_key=resolved_key,
             provider=provider,
             model=model,
+            base_url=base_url,
             expires_at=self._clock() + timedelta(seconds=self._settings.llm_session_ttl_seconds),
         )
         return session_id
@@ -60,7 +65,11 @@ class EvaluationService:
     ) -> EvaluationResult:
         session = self._require_session(uid, session_id)
         session_settings = self._settings.model_copy(
-            update={"llm_provider": session.provider, "llm_model": session.model}
+            update={
+                "llm_provider": session.provider,
+                "llm_model": session.model,
+                "llm_base_url": session.base_url,
+            }
         )
         graph = build_evaluation_graph(
             lambda: self._model_factory(session_settings, session.api_key),
@@ -104,6 +113,12 @@ class EvaluationService:
     def _resolve_choice(self, value: str | None, fallback: str) -> str:
         candidate = (value or "").strip()
         return candidate or fallback
+
+    def _resolve_base_url(self, value: str | None) -> str | None:
+        if value:
+            return value
+        fallback = (self._settings.llm_base_url or "").strip()
+        return fallback or None
 
     def _require_session(self, uid: str, session_id: str) -> _LlmSession:
         session = self._sessions.get(session_id)

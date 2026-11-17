@@ -5,6 +5,7 @@ from src.utils.exceptions import LlmNotConfiguredError
 
 _PROVIDER_PACKAGES = {
     "openai": None,
+    "ollama": None,
     "google_genai": "langchain-google-genai",
     "anthropic": "langchain-anthropic",
 }
@@ -30,11 +31,14 @@ def resolve_provider(provider: str) -> str:
 def build_chat_model(settings: Settings, api_key: str) -> BaseChatModel:
     """Build a chat model for the configured provider.
 
-    ``openai`` also covers OpenAI-compatible hosts when ``llm_base_url`` is set.
+    ``openai`` and ``ollama`` both use the OpenAI-compatible client.
+    ``ollama`` requires ``llm_base_url``. An empty OpenAI base URL means the official API.
     Native ``google_genai`` and ``anthropic`` packages are imported only when selected.
     """
     provider = resolve_provider(settings.llm_provider)
-    if provider == "openai":
+    if provider in {"openai", "ollama"}:
+        if provider == "ollama" and not settings.llm_base_url:
+            raise LlmNotConfiguredError("Model URL is required for provider ollama")
         from langchain_openai import ChatOpenAI
 
         kwargs: dict[str, object] = {
