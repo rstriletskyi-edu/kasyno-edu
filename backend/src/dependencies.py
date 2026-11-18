@@ -7,6 +7,7 @@ from src.services.auth_service import AuthService
 from src.services.llm.evaluation_service import EvaluationService
 from src.services.health_service import HealthService
 from src.services.firebase_service import get_firestore
+from src.services.flashcard_service import FlashcardService
 from src.services.user_service import UserService
 from src.utils.exceptions import AuthenticationError, EmailNotVerifiedError
 
@@ -43,3 +44,7 @@ def get_user_service() -> UserService:
 
 def get_evaluation_service(request: Request) -> EvaluationService:
     return request.app.state.evaluation_service
+
+
+def get_flashcard_service() -> FlashcardService:
+    return FlashcardService()
