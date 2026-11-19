@@ -63,6 +63,7 @@ __pycache__/
 **/.gemini/config/mcp_config.json.txt
 **/skills-lock.json
 **/.agents/**
+.context/*
 
 # Local frontend settings and generated browser configuration
 /frontend/.env
