@@ -91,6 +91,8 @@ def settings_for(**overrides: object) -> Settings:
         "llm_timeout_seconds": 20,
         "llm_max_answer_chars": 2000,
         "llm_session_ttl_seconds": 3600,
+        "firebase_database_url": "https://example.firebasedatabase.app",
+        "questions_path": "questions",
     }
     values.update(overrides)
     return Settings(**values)

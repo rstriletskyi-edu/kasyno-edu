@@ -21,6 +21,8 @@ class Settings(BaseSettings):
 
     firebase_credentials_path: Path = Path("credentials/firebase-service-account.json")
     firebase_project_id: str | None = None
+    firebase_database_url: str
+    questions_path: str
 
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
@@ -50,6 +52,13 @@ class Settings(BaseSettings):
         if isinstance(value, str) and not value.strip():
             return None
         return value
+
+    @field_validator("firebase_database_url", "questions_path", mode="before")
+    @classmethod
+    def require_non_blank(cls, value: object) -> object:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("must not be empty")
+        return value.strip()
 
     @property
     def firebase_credentials_file(self) -> Path:

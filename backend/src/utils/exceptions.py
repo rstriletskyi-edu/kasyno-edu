@@ -19,6 +19,11 @@ class FirebaseNotInitializedError(AppError):
     detail = "Firebase is not initialized"
 
 
+class NoFlashcardsAvailableError(AppError):
+    status_code = status.HTTP_404_NOT_FOUND
+    detail = "No available flashcards"
+
+
 class AuthenticationError(AppError):
     status_code = status.HTTP_401_UNAUTHORIZED
     detail = "Authentication required or credentials invalid"
