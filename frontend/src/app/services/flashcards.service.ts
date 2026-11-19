@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -11,15 +11,15 @@ export interface Flashcard {
   category: string;
 }
 
-export interface FlashcardsResponse {
-  items: Flashcard[];
-}
-
 @Injectable({ providedIn: 'root' })
 export class FlashcardsService {
   private readonly http = inject(HttpClient);
 
-  getFlashcards(): Observable<FlashcardsResponse> {
-    return this.http.get<FlashcardsResponse>(`${environment.apiUrl}/flashcards`);
+  getRandomFlashcard(excludedIds: string[]): Observable<Flashcard> {
+    let params = new HttpParams();
+    for (const id of excludedIds) {
+      params = params.append('excluded_ids', id);
+    }
+    return this.http.get<Flashcard>(`${environment.apiUrl}/flashcards/random`, { params });
   }
 }

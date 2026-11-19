@@ -5,22 +5,18 @@
     <p>Nie udało się pobrać fiszek.</p>
     <button class="submit-button" type="button" (click)="loadFlashcards()">Spróbuj ponownie</button>
   </div>
-} @else if (cards().length === 0) {
-  <div class="display-card">
-    <p>Brak dostępnych pytań.</p>
-  </div>
 } @else if (finished()) {
   <div class="display-card">
     <p>To już wszystkie fiszki.</p>
   </div>
-} @else {
+} @else if (currentCard(); as card) {
   <div class="display-card">
     <div class="display-card-header">
-      <h2>Pytanie #{{ currentIndex() + 1 }}</h2>
+      <h2>Pytanie #{{ usedIds().length + 1 }}</h2>
     </div>
 
     <div class="display-card-content">
-      <p class="question-text">{{ currentCard().question }}</p>
+      <p class="question-text">{{ card.question }}</p>
       <div class="answer-window">
         <textarea
           placeholder="Wpisz swoją odpowiedź tutaj..."
@@ -37,7 +33,7 @@
         [disabled]="!answer().trim()"
         (click)="submitAnswer()"
       >
-        {{ currentIndex() + 1 === cards().length ? 'Zakończ zestaw' : 'Prześlij odpowiedź' }}
+        Prześlij odpowiedź
       </button>
     </div>
   </div>
