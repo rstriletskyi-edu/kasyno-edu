@@ -46,5 +46,5 @@ def get_evaluation_service(request: Request) -> EvaluationService:
     return request.app.state.evaluation_service
 
 
-def get_flashcard_service() -> FlashcardService:
-    return FlashcardService()
+def get_flashcard_service(settings: Settings = Depends(get_settings)) -> FlashcardService:
+    return FlashcardService(settings.questions_path)
