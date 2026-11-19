@@ -8,6 +8,7 @@ from langchain_core.language_models import BaseChatModel
 
 from src.configs.settings import Settings
 from src.models.evaluation import EvaluationRequest, EvaluationResult, LlmGrade, LlmSessionCreateRequest
+from src.models.flashcard import FlashcardResponse
 from src.services.flashcard_service import FlashcardService
 from src.services.llm.credits_factory import CreditsCalculator, build_credits_calculator
 from src.services.llm.evaluation_graph import EvaluationState, build_evaluation_graph
@@ -17,6 +18,7 @@ from src.utils.exceptions import (
     LlmEvaluationError,
     LlmNotConfiguredError,
     LlmSessionNotFoundError,
+    FlashcardLookupTimeoutError,
     LlmTimeoutError,
 )
 
@@ -72,7 +74,7 @@ class EvaluationService:
         self, uid: str, session_id: str, payload: EvaluationRequest
     ) -> EvaluationResult:
         session = self._require_session(uid, session_id)
-        flashcard = self._flashcards.get_flashcard_by_id(payload.question_id)
+        flashcard = await self._load_flashcard(payload.question_id)
         session_settings = self._settings.model_copy(
             update={
                 "llm_provider": session.provider,
@@ -114,6 +116,15 @@ class EvaluationService:
             verdict=grade.verdict,
             explanation=grade.explanation,
         )
+
+    async def _load_flashcard(self, flashcard_id: str) -> FlashcardResponse:
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(self._flashcards.get_flashcard_by_id, flashcard_id),
+                timeout=10,
+            )
+        except TimeoutError as exc:
+            raise FlashcardLookupTimeoutError() from exc
 
     def _resolve_key(self, api_key: str | None) -> str:
         candidate = (api_key or "").strip()

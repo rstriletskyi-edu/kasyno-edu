@@ -65,6 +65,11 @@ class LlmTimeoutError(AppError):
     detail = "LLM evaluation timed out"
 
 
+class FlashcardLookupTimeoutError(AppError):
+    status_code = status.HTTP_504_GATEWAY_TIMEOUT
+    detail = "Flashcard lookup timed out"
+
+
 class LlmEvaluationError(AppError):
     status_code = status.HTTP_502_BAD_GATEWAY
     detail = "LLM evaluation failed"
