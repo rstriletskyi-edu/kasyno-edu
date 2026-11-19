@@ -31,6 +31,14 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = Field(default=20, gt=0)
     llm_max_answer_chars: int = Field(default=2000, gt=0)
     llm_session_ttl_seconds: int = Field(default=3600, gt=0)
+    credits_engine: str = "linear"
+
+    @field_validator("credits_engine", mode="before")
+    @classmethod
+    def normalize_credits_engine(cls, value: object) -> object:
+        if not isinstance(value, str) or not value.strip():
+            return "linear"
+        return value.strip().lower()
 
     @field_validator("llm_provider", mode="before")
     @classmethod

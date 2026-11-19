@@ -125,21 +125,23 @@ safety limits. `url` and `base_url` are the same field.
 
 `POST /api/llm/sessions/{session_id}/evaluations`
 
-Do not send `api_key`, `provider`, `model`, or `base_url` here. They were fixed
-when the session was opened.
+Do not send `api_key`, `provider`, `model`, `base_url`, `question`, or
+`expected_answer` here. The session already has the model settings. The server
+loads the question and the expected answer with `question_id`.
 
 | Field | Required | Limit |
 | --- | --- | --- |
-| `question` | Yes | 1–4000 characters |
-| `expected_answer` | Yes | 1–4000 characters |
+| `question_id` | Yes | Non-empty flashcard id |
 | `user_answer` | Yes | Present in the JSON. Schema max is 20000 characters. The server also rejects a trimmed value longer than `LLM_MAX_ANSWER_CHARS` (default 2000) with `422`. |
 
 An empty or whitespace-only `user_answer` does not call the model. The response
-is `200`:
+is `200`. `credits_received` is `score * 10 // 100` with the current `linear`
+engine, so it is an integer from 0 to 10.
 
 ```json
 {
   "score": 0,
+  "credits_received": 0,
   "verdict": "incorrect",
   "explanation": "Odpowiedź jest pusta, więc nie można przyznać punktów."
 }
@@ -150,6 +152,7 @@ is `200`:
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `score` | integer `0`–`100` | How much of the expected fact is covered |
+| `credits_received` | integer `0`–`10` | Credits from the score. The `linear` engine is `score * 10 // 100`. |
 | `verdict` | `correct`, `partial`, or `incorrect` | Overall result |
 | `explanation` | string, 1–500 characters | One or two Polish sentences for the learner |
 
@@ -157,8 +160,8 @@ Other statuses:
 
 | Status | When |
 | --- | --- |
-| `404` | Unknown id, expired session, or a session owned by another uid |
-| `422` | Missing field, empty question or expected answer, or an answer over the length limit |
+| `404` | Unknown session, expired session, another user's session, or an unknown flashcard id |
+| `422` | Missing field or an answer over the length limit |
 | `502` | The model provider failed or returned an unusable result. `detail` is `LLM evaluation failed` |
 | `504` | The model did not finish within `LLM_TIMEOUT_SECONDS`. `detail` is `LLM evaluation timed out` |
 
@@ -176,8 +179,7 @@ Response: `context/response_example_exact_copy.json`.
 
 ```json
 {
-  "question": "Struktura i organizacja typowego systemu komputerowego.",
-  "expected_answer": "Typowy system komputerowy składa się z procesora, pamięci operacyjnej, urządzeń wejścia/wyjścia oraz magistral łączących te elementy. Procesor wykonuje instrukcje, pamięć przechowuje programy i dane, a urządzenia wejścia/wyjścia umożliwiają komunikację z otoczeniem.",
+  "question_id": "computer-system",
   "user_answer": "Typowy system komputerowy składa się z procesora, pamięci operacyjnej, urządzeń wejścia/wyjścia oraz magistral łączących te elementy. Procesor wykonuje instrukcje, pamięć przechowuje programy i dane, a urządzenia wejścia/wyjścia umożliwiają komunikację z otoczeniem."
 }
 ```
@@ -185,6 +187,7 @@ Response: `context/response_example_exact_copy.json`.
 ```json
 {
   "score": 100,
+  "credits_received": 10,
   "verdict": "correct",
   "explanation": "Odpowiedź jest identyczna z wzorcową i w pełni poprawna merytorycznie."
 }
@@ -196,8 +199,7 @@ Same facts in different wording, including abbreviations. Request:
 
 ```json
 {
-  "question": "Budowa i działanie typowego procesora ogólnego przeznaczenia.",
-  "expected_answer": "Procesor zawiera jednostkę sterującą, jednostkę arytmetyczno-logiczną (ALU) i rejestry. Jednostka sterująca pobiera i interpretuje instrukcje, ALU wykonuje operacje arytmetyczne i logiczne, a rejestry przechowują szybko dostępne dane.",
+  "question_id": "cpu-parts",
   "user_answer": "ALU, CU, registers. CU pobiera i interpretuje instrukcje, ALU wykonuje operacje arytmetyczne i logiczne, a rejestry przechowują szybko dostępne dane"
 }
 ```
@@ -205,6 +207,7 @@ Same facts in different wording, including abbreviations. Request:
 ```json
 {
   "score": 100,
+  "credits_received": 10,
   "verdict": "correct",
   "explanation": "Uczeń poprawnie wymienił wszystkie kluczowe komponenty procesora oraz ich funkcje, używając dopuszczalnych skrótów."
 }
@@ -215,8 +218,7 @@ Response: `context/request_example_partial.json`.
 
 ```json
 {
-  "question": "Wykonywanie rozkazów przez procesor(y), przerwania, wyjątki.",
-  "expected_answer": "Procesor wykonuje cykl pobrania, dekodowania i wykonania instrukcji. Przerwanie sygnalizuje zdarzenie wymagające obsługi, a wyjątek powstaje podczas wykonywania instrukcji, np. przy dzieleniu przez zero. Procesor zapisuje stan i uruchamia odpowiednią procedurę obsługi.",
+  "question_id": "cpu-cycle",
   "user_answer": "Procesor wykonuje cykl pobrania, dekodowania i wykonania instrukcji"
 }
 ```
@@ -224,6 +226,7 @@ Response: `context/request_example_partial.json`.
 ```json
 {
   "score": 33,
+  "credits_received": 3,
   "verdict": "partial",
   "explanation": "Uczeń poprawnie opisał cykl pracy procesora, jednak całkowicie pominął kwestię przerwań oraz wyjątków, o które pytało pytanie."
 }
