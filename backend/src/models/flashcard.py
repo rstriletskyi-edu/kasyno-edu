@@ -1,4 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class RandomFlashcardRequest(BaseModel):
+    excluded_ids: list[str] = Field(default_factory=list, max_length=5_000)
 
 
 class FlashcardResponse(BaseModel):

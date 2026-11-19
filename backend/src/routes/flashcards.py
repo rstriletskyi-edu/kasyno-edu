@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Body, Depends
 
 from src.dependencies import get_flashcard_service
-from src.models.flashcard import FlashcardResponse
+from src.models.flashcard import FlashcardResponse, RandomFlashcardRequest
 from src.services.flashcard_service import FlashcardService
 
 router = APIRouter(prefix="/flashcards", tags=["flashcards"])
 
 
-@router.get("/random", response_model=FlashcardResponse)
+@router.post("/random", response_model=FlashcardResponse)
 def get_random_flashcard(
-    excluded_ids: list[str] = Query(default=[]),
+    payload: RandomFlashcardRequest = Body(default_factory=RandomFlashcardRequest),
     service: FlashcardService = Depends(get_flashcard_service),
 ) -> FlashcardResponse:
-    return service.get_random_flashcard(excluded_ids)
+    return service.get_random_flashcard(payload.excluded_ids)
