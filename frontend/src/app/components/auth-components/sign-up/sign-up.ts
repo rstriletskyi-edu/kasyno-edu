@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { FirebaseAuthService, firebaseErrorMessage } from '../../../services/firebase-auth.service';
 
 @Component({
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink],
   selector: 'sign-up',
   styleUrls: ['../auth.css', './sign-up.css'],
   templateUrl: './sign-up.html',

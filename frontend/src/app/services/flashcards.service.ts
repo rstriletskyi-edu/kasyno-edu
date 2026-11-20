@@ -20,4 +20,9 @@ export class FlashcardsService {
       excluded_ids: excludedIds,
     });
   }
+
+  getConcreteFlashcard(flashcardId: string): Observable<Flashcard> {
+    return this.http.get<Flashcard>(`${environment.apiUrl}/flashcards/${flashcardId}`);
+  }
+
 }

@@ -87,8 +87,9 @@
   margin-top: 16px;
 }
 
-.submit-button {
-  background-color: #10cc81;
+.submit-button,
+.return-button,
+.previous-button {
   color: white;
   border: none;
   width: auto;
@@ -99,31 +100,39 @@
   font-size: 1rem;
   transition:
     background-color 0.3s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    opacity 0.2s ease;
   text-align: center;
   white-space: nowrap;
 }
 
-.submit-button:hover {
+.submit-button:disabled,
+.previous-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit-button {
+  background-color: #10cc81;
+}
+
+.submit-button:hover:not(:disabled) {
   background-color: #10ff81;
+  transform: translateY(-2px);
+}
+
+.previous-button {
+  background-color: #e67e00;
+}
+
+.previous-button:hover:not(:disabled) {
+  background-color: #ff9800;
   transform: translateY(-2px);
 }
 
 .return-button {
   background-color: #cc0000;
-  color: white;
-  border: none;
-  width: auto;
-  height: auto;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition:
-    background-color 0.3s ease,
-    transform 0.2s ease;
-  text-align: center;
-  white-space: nowrap;
 }
 
 .return-button:hover {

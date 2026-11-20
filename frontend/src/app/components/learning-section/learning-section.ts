@@ -1,6 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
-import { HealthService } from '../../services/health.service';
 import { DisplayCards } from './display-cards/display-cards';
+import { LlmEvalService } from '../../services/llm-eval.service';
+import { HttpErrorResponse } from '@angular/common/http';
+
+import { environment } from '../../../environments/environment';
 
 @Component({
   imports: [DisplayCards],
@@ -9,22 +12,48 @@ import { DisplayCards } from './display-cards/display-cards';
   templateUrl: './learning-section.html',
 })
 export class LearningSection {
-  displayCardVisible = signal(false);
-  protected healthService = inject(HealthService);
-  healthCheckResult = signal('good');
+  protected evalService = inject(LlmEvalService);
 
-  getHealth() {
-    this.healthService.getHealth().subscribe({
-      next: (healthResponse) => this.healthCheckResult.set(healthResponse.status),
-      error: (err) => console.error(err),
-    });
-  }
+  protected sessionId = signal<string | null>(null);
+  protected error = signal<boolean>(false);
+  protected errorMessage = signal<string>('');
+  
+  displayCardVisible = signal(false);
 
   goToDisplayCards() {
-    this.displayCardVisible.set(true);
+    this.error.set(false);
+    this.errorMessage.set('');
+
+    this.evalService
+      .getLlmSession(
+        /*tu zamiast w jakiś sposób powinniśmy domyślnie załączyć osobiste ustawienie z providerem modelu aktualnie zalogowanego użytkownika*/
+        {
+          api_key: "",
+          provider: "",
+          model: "",
+          base_url: "",
+        },
+      )
+      .subscribe({
+        next: (sessionId) => {
+          if (sessionId === null || sessionId.trim() === '') {
+            this.error.set(true);
+            this.errorMessage.set('Nie udało się rozpocząć sesji: otrzymano puste session ID.');
+            return;
+          }
+          this.sessionId.set(sessionId);
+          this.displayCardVisible.set(true);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.error.set(true);
+          this.errorMessage.set(`${err.status}: ${err.error?.detail}` || 'Wystąpił błąd podczas tworzenia sesji.');
+        },
+      });
   }
 
   goBackToMenu() {
     this.displayCardVisible.set(false);
+    this.sessionId.set(null);
   }
 }
+
