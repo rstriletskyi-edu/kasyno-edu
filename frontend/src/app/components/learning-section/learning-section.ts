@@ -17,7 +17,7 @@ export class LearningSection {
   protected sessionId = signal<string | null>(null);
   protected error = signal<boolean>(false);
   protected errorMessage = signal<string>('');
-  
+
   displayCardVisible = signal(false);
 
   goToDisplayCards() {
@@ -28,10 +28,10 @@ export class LearningSection {
       .getLlmSession(
         /*tu zamiast w jakiś sposób powinniśmy domyślnie załączyć osobiste ustawienie z providerem modelu aktualnie zalogowanego użytkownika*/
         {
-          api_key: "",
-          provider: "",
-          model: "",
-          base_url: "",
+          api_key: '',
+          provider: '',
+          model: '',
+          base_url: '',
         },
       )
       .subscribe({
@@ -46,7 +46,9 @@ export class LearningSection {
         },
         error: (err: HttpErrorResponse) => {
           this.error.set(true);
-          this.errorMessage.set(`${err.status}: ${err.error?.detail}` || 'Wystąpił błąd podczas tworzenia sesji.');
+          this.errorMessage.set(
+            `${err.status}: ${err.error?.detail}` || 'Wystąpił błąd podczas tworzenia sesji.',
+          );
         },
       });
   }
@@ -56,4 +58,3 @@ export class LearningSection {
     this.sessionId.set(null);
   }
 }
-

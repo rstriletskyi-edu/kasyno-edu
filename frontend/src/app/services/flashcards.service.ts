@@ -24,5 +24,4 @@ export class FlashcardsService {
   getConcreteFlashcard(flashcardId: string): Observable<Flashcard> {
     return this.http.get<Flashcard>(`${environment.apiUrl}/flashcards/${flashcardId}`);
   }
-
 }

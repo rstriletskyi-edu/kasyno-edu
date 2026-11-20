@@ -24,7 +24,8 @@ export const routes: Routes = [
     path: 'settings',
     title: `${baseTitle} - Ustawienia`,
     pathMatch: 'full',
-    loadComponent: () => import('./components/settings-components/settings/settings').then((c) => c.Settings),
+    loadComponent: () =>
+      import('./components/settings-components/settings/settings').then((c) => c.Settings),
     canActivate: [authGuard],
   },
   {

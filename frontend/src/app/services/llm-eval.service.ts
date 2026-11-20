@@ -5,9 +5,9 @@ import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface EvalResponse {
-  score: number,
-  verdict: string,
-  explanation: string
+  score: number;
+  verdict: string;
+  explanation: string;
 }
 
 export interface LlmSessionRequest {
@@ -22,17 +22,16 @@ export interface LlmSessionResponse {
 }
 
 export interface EvaluationRequest {
-  question_id: string,
-  user_answer: string
+  question_id: string;
+  user_answer: string;
 }
 
 export interface EvaluationResult {
   score: number;
   verdict: string;
-  credits_received: number,
+  credits_received: number;
   explanation: string;
 }
-
 
 @Injectable({ providedIn: 'root' })
 export class LlmEvalService {
@@ -48,6 +47,9 @@ export class LlmEvalService {
   }
 
   getAnswerEvaluation(sessionId: string, evalRequest: EvaluationRequest): Observable<EvalResponse> {
-    return this.http.post<EvalResponse>(`${environment.apiUrl}/llm/sessions/${sessionId}/evaluations`, evalRequest);
+    return this.http.post<EvalResponse>(
+      `${environment.apiUrl}/llm/sessions/${sessionId}/evaluations`,
+      evalRequest,
+    );
   }
 }

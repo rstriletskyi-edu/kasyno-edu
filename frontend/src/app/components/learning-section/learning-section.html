@@ -12,7 +12,8 @@
     </p>
 
     @if (error()) {
-      <p>{{ errorMessage() }}</p><!--potrzebuje stylizowania i jakiejś oprawy wizualnej-->
+      <p>{{ errorMessage() }}</p>
+      <!--potrzebuje stylizowania i jakiejś oprawy wizualnej-->
     }
 
     <div class="button-wrapper">
@@ -23,4 +24,3 @@
 } @else {
   <display-cards [sessionId]="sessionId()" (returnToMenuEvent)="goBackToMenu()"></display-cards>
 }
-

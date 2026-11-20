@@ -1,7 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal, output, input } from '@angular/core';
 import { Flashcard, FlashcardsService } from '../../../services/flashcards.service';
-import { LlmEvalService, EvaluationRequest, EvaluationResult } from '../../../services/llm-eval.service';
+import {
+  LlmEvalService,
+  EvaluationRequest,
+  EvaluationResult,
+} from '../../../services/llm-eval.service';
 
 @Component({
   imports: [],
@@ -11,7 +15,7 @@ import { LlmEvalService, EvaluationRequest, EvaluationResult } from '../../../se
 })
 export class DisplayCards {
   private readonly flashcardsService = inject(FlashcardsService);
-  
+
   protected evalService = inject(LlmEvalService);
   readonly sessionId = input<string | null>(null);
 
@@ -81,22 +85,22 @@ export class DisplayCards {
   submitAnswer() {
     //tak samo jak w innych funkcjach obsłuż flagę błędu i ładowania
 
-    this.evalService.getAnswerEvaluation(this.sessionId()! /*nie możemy dodać null na razie "!"" ignoruje*/ , 
-      /*obiekt EvaluationRequest z llm-eval.service.ts*/{
-        question_id: this.currentCard()?.id! /*tu tak samo nie możemy dopuścić do null id*/,
-        user_answer: this.answer()
-      }
-    ).subscribe(
-      {
+    this.evalService
+      .getAnswerEvaluation(
+        this.sessionId()! /*nie możemy dodać null na razie "!"" ignoruje*/,
+        /*obiekt EvaluationRequest z llm-eval.service.ts*/ {
+          question_id: this.currentCard()?.id! /*tu tak samo nie możemy dopuścić do null id*/,
+          user_answer: this.answer(),
+        },
+      )
+      .subscribe({
         next: (evaluation) => {
           // tutaj przypisanie wyniku do zmiennej wyświetlającej wyniki wg modelu EvaluationResult z llm-eval.service.ts
         },
         error: (err: HttpErrorResponse) => {
-          // obsługa błędów 
-        }
-      }
-    );
-
+          // obsługa błędów
+        },
+      });
 
     if (!this.answer().trim()) return;
 

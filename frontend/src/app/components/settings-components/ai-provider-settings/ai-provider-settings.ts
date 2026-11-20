@@ -6,6 +6,4 @@ import { Component } from '@angular/core';
   styleUrl: './ai-provider-settings.css',
   templateUrl: './ai-provider-settings.html',
 })
-export class AiProviderSettings {
-  
-}
+export class AiProviderSettings {}

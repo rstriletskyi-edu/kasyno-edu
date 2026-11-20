@@ -60,4 +60,4 @@ async def evaluate_answer(
     service: EvaluationService = Depends(get_evaluation_service),
 ) -> EvaluationResult:
     response.headers["Cache-Control"] = "no-store"
-    return await service.evaluate(user.id, session_id, payload) 
+    return await service.evaluate(user.uid, session_id, payload) 
