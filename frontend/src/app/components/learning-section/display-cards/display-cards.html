@@ -1,23 +1,40 @@
-<div class="display-card">
-  <div class="display-card-header">
-    <h2>Pytanie #X</h2>
-    <!-- TODO: Pobrać numer pytania z bazy danych -->
+@if (loading()) {
+  <p>Wczytywanie fiszek...</p>
+} @else if (loadError()) {
+  <div class="display-card">
+    <p>Nie udało się pobrać fiszek.</p>
+    <button class="submit-button" type="button" (click)="loadFlashcards()">Spróbuj ponownie</button>
   </div>
+} @else if (finished()) {
+  <div class="display-card">
+    <p>To już wszystkie fiszki.</p>
+  </div>
+} @else if (currentCard(); as card) {
+  <div class="display-card">
+    <div class="display-card-header">
+      <h2>Pytanie #{{ usedIds().length + 1 }}</h2>
+    </div>
 
-  <div class="display-card-content">
-    <!-- TODO: Pobrać treść pytania z bazy danych -->
-    <p class="question-text">Treść pytania</p>
-    <div class="answer-window">
-      <textarea placeholder="Wpisz swoją odpowiedź tutaj..."></textarea>
+    <div class="display-card-content">
+      <p class="question-text">{{ card.question }}</p>
+      <div class="answer-window">
+        <textarea
+          placeholder="Wpisz swoją odpowiedź tutaj..."
+          [value]="answer()"
+          (input)="updateAnswer($any($event.target).value)"
+        ></textarea>
+      </div>
+    </div>
+    <div class="button-wrapper">
+      <button class="return-button" type="button" (click)="returnToMenu()">Powrót do menu</button>
+      <button
+        class="submit-button"
+        type="button"
+        [disabled]="!answer().trim()"
+        (click)="submitAnswer()"
+      >
+        Prześlij odpowiedź
+      </button>
     </div>
   </div>
-  <div class="button-wrapper">
-    <button class="return-button" (click)="returnToMenu()">Powrót do menu</button>
-    <!-- TODO: Dodać funkcjonalność przesyłania odpowiedzi -->
-    <button class="submit-button" (click)="submitAnswer()">Prześlij odpowiedź</button>
-
-    <!-- <div>
-        <button (click)="getHealth()">Test Health</button>
-      </div> -->
-  </div>
-</div>
+}

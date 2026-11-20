@@ -6,7 +6,7 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from src.models.evaluation import EvaluationResult, Verdict
+from src.models.evaluation import LlmGrade, Verdict
 from src.utils.exceptions import AnswerTooLongError, LlmEvaluationError
 
 SYSTEM_PROMPT = """Jesteś egzaminatorem merytorycznym w aplikacji edukacyjnej. Oceniasz wyłącznie zgodność faktograficzną odpowiedzi ucznia z odpowiedzią wzorcową.
@@ -29,7 +29,7 @@ class EvaluationState(TypedDict):
     question: str
     expected_answer: str
     user_answer: str
-    result: EvaluationResult | None
+    result: LlmGrade | None
 
 
 def build_grading_messages(question: str, expected_answer: str, user_answer: str) -> list[BaseMessage]:
@@ -60,7 +60,7 @@ def build_evaluation_graph(
         if not answer:
             return {
                 "user_answer": answer,
-                "result": EvaluationResult(
+                "result": LlmGrade(
                     score=0,
                     verdict=Verdict.INCORRECT,
                     explanation=EMPTY_ANSWER_EXPLANATION,
@@ -73,8 +73,8 @@ def build_evaluation_graph(
             return END
         return "grade"
 
-    async def grade(state: EvaluationState) -> dict[str, EvaluationResult]:
-        structured = build_model().with_structured_output(EvaluationResult)
+    async def grade(state: EvaluationState) -> dict[str, LlmGrade]:
+        structured = build_model().with_structured_output(LlmGrade)
         try:
             raw = await structured.ainvoke(
                 build_grading_messages(
@@ -83,9 +83,9 @@ def build_evaluation_graph(
             )
         except Exception as exc:
             raise LlmEvaluationError() from exc
-        if isinstance(raw, EvaluationResult):
+        if isinstance(raw, LlmGrade):
             return {"result": raw}
-        return {"result": EvaluationResult.model_validate(raw)}
+        return {"result": LlmGrade.model_validate(raw)}
 
     graph = StateGraph(EvaluationState)
     graph.add_node("prepare", prepare)

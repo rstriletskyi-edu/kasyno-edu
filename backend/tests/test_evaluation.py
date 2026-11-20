@@ -9,16 +9,19 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.configs.settings import Settings
 from src.main import create_app
-from src.models.evaluation import EvaluationResult, Verdict
+from src.models.evaluation import LlmGrade, Verdict
+from src.models.flashcard import FlashcardResponse
+from src.services.llm.credits_factory import build_credits_calculator, linear_credits
 from src.services.llm.evaluation_graph import SYSTEM_PROMPT, build_grading_messages
 from src.services.llm.evaluation_service import EvaluationService
 from src.services.llm.llm_factory import build_chat_model
-from src.utils.exceptions import LlmNotConfiguredError
+from src.utils.exceptions import LlmNotConfiguredError, NoFlashcardsAvailableError
 
 AUTH = {"Authorization": "Bearer test-token"}
+CARD_QUESTION = "Jaka jest stolica Francji?"
+CARD_ANSWER = "Paryż"
 GRADING_BODY = {
-    "question": "Jaka jest stolica Francji?",
-    "expected_answer": "Paryż",
+    "question_id": "card-1",
     "user_answer": "UNTRUSTED-ANSWER-MARKER",
 }
 
@@ -45,9 +48,21 @@ class MutableClock:
         self.now += timedelta(seconds=seconds)
 
 
+class FakeFlashcards:
+    def get_flashcard_by_id(self, flashcard_id: str) -> FlashcardResponse:
+        if flashcard_id == "missing":
+            raise NoFlashcardsAvailableError()
+        return FlashcardResponse(
+            id=flashcard_id,
+            question=CARD_QUESTION,
+            expected_answer=CARD_ANSWER,
+            category="Geografia",
+        )
+
+
 class FakeModel:
-    def __init__(self, result: EvaluationResult | None = None, delay: float = 0) -> None:
-        self.result = result or EvaluationResult(
+    def __init__(self, result: LlmGrade | None = None, delay: float = 0) -> None:
+        self.result = result or LlmGrade(
             score=85,
             verdict=Verdict.PARTIAL,
             explanation="Odpowiedź pokrywa część faktów.",
@@ -68,11 +83,11 @@ class FakeModel:
         self.seen_base_urls.append(settings.llm_base_url)
         return self
 
-    def with_structured_output(self, schema: type[EvaluationResult]) -> "FakeModel":
-        assert schema is EvaluationResult
+    def with_structured_output(self, schema: type[LlmGrade]) -> "FakeModel":
+        assert schema is LlmGrade
         return self
 
-    async def ainvoke(self, messages: list[SystemMessage | HumanMessage]) -> EvaluationResult:
+    async def ainvoke(self, messages: list[SystemMessage | HumanMessage]) -> LlmGrade:
         self.calls += 1
         self.messages = messages
         if self.delay:
@@ -91,6 +106,8 @@ def settings_for(**overrides: object) -> Settings:
         "llm_timeout_seconds": 20,
         "llm_max_answer_chars": 2000,
         "llm_session_ttl_seconds": 3600,
+        "firebase_database_url": "https://example.firebasedatabase.app",
+        "questions_path": "questions",
     }
     values.update(overrides)
     return Settings(**values)
@@ -120,7 +137,12 @@ def harness(verify_token: Mock) -> Iterator[callable]:
             return model.bind(factory_settings, api_key)
 
         app = create_app()
-        app.state.evaluation_service = EvaluationService(settings, model_factory=factory, clock=clock)
+        app.state.evaluation_service = EvaluationService(
+            settings,
+            FakeFlashcards(),
+            model_factory=factory,
+            clock=clock,
+        )
         client = TestClient(app)
         client.__enter__()
         clients.append(client)
@@ -162,12 +184,15 @@ def test_session_key_is_not_echoed_and_grades_the_answer(harness: callable) -> N
     assert graded.headers["cache-control"] == "no-store"
     assert graded.json() == {
         "score": 85,
+        "credits_received": 8,
         "verdict": "partial",
         "explanation": "Odpowiedź pokrywa część faktów.",
     }
     assert model.seen_keys == ["frontend-key"]
     assert model.messages is not None
     assert "UNTRUSTED-ANSWER-MARKER" not in model.messages[0].content
+    assert f"<question>\n{CARD_QUESTION}\n</question>" in model.messages[1].content
+    assert f"<expected_answer>\n{CARD_ANSWER}\n</expected_answer>" in model.messages[1].content
     assert "<user_answer>\nUNTRUSTED-ANSWER-MARKER\n</user_answer>" in model.messages[1].content
 
 
@@ -339,8 +364,32 @@ def test_empty_answer_is_incorrect_without_calling_the_model(harness: callable) 
 
     assert response.status_code == 200
     assert response.json()["score"] == 0
+    assert response.json()["credits_received"] == 0
     assert response.json()["verdict"] == "incorrect"
     assert model.calls == 0
+
+
+def test_missing_flashcard_does_not_call_the_model(harness: callable) -> None:
+    client, model, _clock = harness(llm_api_key="env-key")
+    session_id = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+
+    response = client.post(
+        f"/api/llm/sessions/{session_id}/evaluations",
+        json={**GRADING_BODY, "question_id": "missing"},
+        headers=AUTH,
+    )
+
+    assert response.status_code == 404
+    assert model.calls == 0
+
+
+def test_linear_credits_map_score_onto_zero_to_ten() -> None:
+    assert linear_credits(0) == 0
+    assert linear_credits(85) == 8
+    assert linear_credits(100) == 10
+    assert build_credits_calculator("linear")(33) == 3
+    with pytest.raises(LlmNotConfiguredError, match="Unsupported credits engine"):
+        build_credits_calculator("future-engine")
 
 
 def test_other_user_bad_id_and_expired_session_are_not_found(

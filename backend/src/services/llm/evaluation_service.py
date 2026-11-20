@@ -7,7 +7,10 @@ from uuid import uuid4
 from langchain_core.language_models import BaseChatModel
 
 from src.configs.settings import Settings
-from src.models.evaluation import EvaluationRequest, EvaluationResult, LlmSessionCreateRequest
+from src.models.evaluation import EvaluationRequest, EvaluationResult, LlmGrade, LlmSessionCreateRequest
+from src.models.flashcard import FlashcardResponse
+from src.services.flashcard_service import FlashcardService
+from src.services.llm.credits_factory import CreditsCalculator, build_credits_calculator
 from src.services.llm.evaluation_graph import EvaluationState, build_evaluation_graph
 from src.services.llm.llm_factory import build_chat_model, resolve_provider
 from src.utils.exceptions import (
@@ -15,6 +18,7 @@ from src.utils.exceptions import (
     LlmEvaluationError,
     LlmNotConfiguredError,
     LlmSessionNotFoundError,
+    FlashcardLookupTimeoutError,
     LlmTimeoutError,
 )
 
@@ -33,12 +37,18 @@ class EvaluationService:
     def __init__(
         self,
         settings: Settings,
+        flashcards: FlashcardService,
         model_factory: Callable[[Settings, str], BaseChatModel] | None = None,
         clock: Callable[[], datetime] | None = None,
+        credits_calculator: CreditsCalculator | None = None,
     ) -> None:
         self._settings = settings
+        self._flashcards = flashcards
         self._model_factory = model_factory or build_chat_model
         self._clock = clock or (lambda: datetime.now(timezone.utc))
+        self.__credits_calculator = credits_calculator or build_credits_calculator(
+            settings.credits_engine
+        )
         self._sessions: dict[str, _LlmSession] = {}
 
     def create_session(self, uid: str, payload: LlmSessionCreateRequest) -> str:
@@ -64,6 +74,7 @@ class EvaluationService:
         self, uid: str, session_id: str, payload: EvaluationRequest
     ) -> EvaluationResult:
         session = self._require_session(uid, session_id)
+        flashcard = await self._load_flashcard(payload.question_id)
         session_settings = self._settings.model_copy(
             update={
                 "llm_provider": session.provider,
@@ -79,8 +90,8 @@ class EvaluationService:
             state: EvaluationState = await asyncio.wait_for(
                 graph.ainvoke(
                     {
-                        "question": payload.question,
-                        "expected_answer": payload.expected_answer,
+                        "question": flashcard.question,
+                        "expected_answer": flashcard.expected_answer,
                         "user_answer": payload.user_answer,
                         "result": None,
                     }
@@ -94,12 +105,26 @@ class EvaluationService:
         except Exception as exc:
             raise LlmEvaluationError() from exc
 
-        result = state.get("result")
-        if isinstance(result, EvaluationResult):
-            return result
-        if result is None:
+        grade = state.get("result")
+        if grade is None:
             raise LlmEvaluationError()
-        return EvaluationResult.model_validate(result)
+        if not isinstance(grade, LlmGrade):
+            grade = LlmGrade.model_validate(grade)
+        return EvaluationResult(
+            score=grade.score,
+            credits_received=self.__credits_calculator(grade.score),
+            verdict=grade.verdict,
+            explanation=grade.explanation,
+        )
+
+    async def _load_flashcard(self, flashcard_id: str) -> FlashcardResponse:
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(self._flashcards.get_flashcard_by_id, flashcard_id),
+                timeout=10,
+            )
+        except TimeoutError as exc:
+            raise FlashcardLookupTimeoutError() from exc
 
     def _resolve_key(self, api_key: str | None) -> str:
         candidate = (api_key or "").strip()

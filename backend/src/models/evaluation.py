@@ -53,12 +53,20 @@ class LlmSessionResponse(BaseModel):
 
 
 class EvaluationRequest(BaseModel):
-    question: str = Field(min_length=1, max_length=QUESTION_MAX_LENGTH)
-    expected_answer: str = Field(min_length=1, max_length=EXPECTED_ANSWER_MAX_LENGTH)
+    question_id: str = Field(min_length=1)
     user_answer: str = Field(max_length=USER_ANSWER_MAX_LENGTH)
+
+
+class LlmGrade(BaseModel):
+    """Structured model output. Credits are calculated after grading."""
+
+    score: int = Field(ge=0, le=100)
+    verdict: Verdict
+    explanation: str = Field(min_length=1, max_length=EXPLANATION_MAX_LENGTH)
 
 
 class EvaluationResult(BaseModel):
     score: int = Field(ge=0, le=100)
+    credits_received: int = Field(ge=0, le=10)
     verdict: Verdict
     explanation: str = Field(min_length=1, max_length=EXPLANATION_MAX_LENGTH)
