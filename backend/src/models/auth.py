@@ -16,6 +16,13 @@ class AuthenticatedUser(BaseModel):
 
 class UserProfile(BaseModel):
     created_at: datetime | None = None
+    credits: int = 0
+
+
+class CreditTransaction(BaseModel):
+    value: float
+    Reason: str
+    timestamp: datetime
 
 
 class CurrentUserResponse(BaseModel):

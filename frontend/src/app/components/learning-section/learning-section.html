@@ -11,11 +11,16 @@
       Zdobywaj wiedzę, rozwiązuj quizy i zgarniaj dodatkowe darmowe żetony na grę!
     </p>
 
+    @if (error()) {
+      <p>{{ errorMessage() }}</p>
+      <!--potrzebuje stylizowania i jakiejś oprawy wizualnej-->
+    }
+
     <div class="button-wrapper">
       <button class="start-button" (click)="goToDisplayCards()">Rozpocznij naukę</button>
       <button class="leaderboard-button"><span> Tabela liderów </span></button>
     </div>
   </div>
 } @else {
-  <display-cards (returnToMenuEvent)="goBackToMenu()"></display-cards>
+  <display-cards [sessionId]="sessionId()" (returnToMenuEvent)="goBackToMenu()"></display-cards>
 }
