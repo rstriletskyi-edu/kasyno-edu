@@ -9,10 +9,12 @@ from firebase_admin import auth
 from firebase_admin.exceptions import PermissionDeniedError, UnavailableError
 from google.api_core.exceptions import AlreadyExists
 from google.api_core.exceptions import PermissionDenied as FirestorePermissionDenied
+from google.cloud.firestore import SERVER_TIMESTAMP
 
 from src.dependencies import get_current_user, get_verified_user
 from src.main import create_app
 from src.models.auth import AuthenticatedUser
+from src.services.user_service import UserService
 
 
 @pytest.fixture
@@ -198,6 +200,32 @@ def profile_db(monkeypatch: pytest.MonkeyPatch) -> Mock:
     return db
 
 
+def test_record_transaction_uses_firestore_subcollection_schema() -> None:
+    db = Mock()
+    user_reference = db.collection.return_value.document.return_value
+    transaction_reference = (
+        user_reference.collection.return_value.document.return_value
+    )
+
+    UserService(db).record_transaction(
+        "firebase-user-123",
+        8,
+        "Flashcard evaluation",
+    )
+
+    db.collection.assert_called_once_with("users")
+    db.collection.return_value.document.assert_called_once_with("firebase-user-123")
+    user_reference.collection.assert_called_once_with("transactions")
+    user_reference.collection.return_value.document.assert_called_once_with()
+    transaction_reference.create.assert_called_once_with(
+        {
+            "value": 8.0,
+            "Reason": "Flashcard evaluation",
+            "timestamp": SERVER_TIMESTAMP,
+        }
+    )
+
+
 def test_me_reads_only_token_uid_and_does_not_overwrite_existing_profile(
     client: TestClient, profile_db: Mock
 ) -> None:
@@ -210,7 +238,7 @@ def test_me_reads_only_token_uid_and_does_not_overwrite_existing_profile(
     assert response.json() == {
         "uid": "firebase-user-123", "email": "learner@example.test",
         "email_verified": True, "display_name": "Learner",
-        "profile": {"created_at": "2026-11-12T00:00:00Z"},
+        "profile": {"created_at": "2026-11-12T00:00:00Z", "credits": 0},
     }
     profile_db.collection.assert_called_once_with("users")
     reference = profile_db.collection.return_value.document
@@ -234,7 +262,9 @@ def test_me_initializes_missing_profile_without_overwriting_concurrent_creation(
     response = client.get("/api/auth/me", headers={"Authorization": "Bearer test-token"})
 
     assert response.status_code == 200
-    reference.create.assert_called_once_with({"created_at": SERVER_TIMESTAMP})
+    reference.create.assert_called_once_with(
+        {"created_at": SERVER_TIMESTAMP, "credits": 0}
+    )
     reference.set.assert_not_called()
 
 
