@@ -15,9 +15,17 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    title: `${baseTitle} - Account`,
+    title: `${baseTitle} - Konto`,
     pathMatch: 'full',
     loadComponent: () => import('./components/dashboard/dashboard').then((c) => c.Dashboard),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'settings',
+    title: `${baseTitle} - Ustawienia`,
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./components/settings-components/settings/settings').then((c) => c.Settings),
     canActivate: [authGuard],
   },
   {
@@ -26,19 +34,19 @@ export const routes: Routes = [
       { path: '', redirectTo: 'login', pathMatch: 'full' },
       {
         path: 'login',
-        title: `${baseTitle} - Sign In`,
+        title: `${baseTitle} - Zaloguj`,
         loadComponent: () =>
-          import('./components/auth-components/sign-in/sign-in').then((c) => c.SignIn), //lazy loading komponentu
+          import('./components/auth-components/sign-in/sign-in').then((c) => c.SignIn),
       },
       {
         path: 'register',
-        title: `${baseTitle} - Sign Up`,
+        title: `${baseTitle} - Zarejestruj`,
         loadComponent: () =>
           import('./components/auth-components/sign-up/sign-up').then((c) => c.SignUp),
       },
       {
         path: 'password-reset',
-        title: `${baseTitle} - Change Password`,
+        title: `${baseTitle} - Zmień hasło`,
         loadComponent: () =>
           import('./components/auth-components/password-change/password-change').then(
             (c) => c.PasswordChange,
@@ -46,7 +54,7 @@ export const routes: Routes = [
       },
       {
         path: 'account-activation',
-        title: `${baseTitle} - Activcate Account`,
+        title: `${baseTitle} - Aktywuj konto`,
         loadComponent: () =>
           import('./components/auth-components/account-activation/account-activation').then(
             (c) => c.AccountActivation,
