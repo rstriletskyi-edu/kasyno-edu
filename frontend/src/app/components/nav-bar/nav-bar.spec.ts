@@ -2,28 +2,18 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NavBar } from './nav-bar';
 import { Router, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
-import { of } from 'rxjs';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
-import { CurrentUserService } from '../../services/current-user.service';
 
 describe('NavBar', () => {
   let component: NavBar;
   let fixture: ComponentFixture<NavBar>;
   let signOut: ReturnType<typeof vi.fn>;
   let navigate: ReturnType<typeof vi.spyOn>;
-  let getMe: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     signOut = vi.fn().mockResolvedValue(undefined);
-    getMe = vi.fn().mockReturnValue(of({
-      profile: { created_at: null, credits: 0 },
-    }));
     await TestBed.configureTestingModule({
-      providers: [
-        provideRouter([]),
-        { provide: FirebaseAuthService, useValue: { signOut } },
-        { provide: CurrentUserService, useValue: { getMe } },
-      ],
+      providers: [provideRouter([]), { provide: FirebaseAuthService, useValue: { signOut } }],
       imports: [NavBar],
     }).compileComponents();
 

@@ -1,9 +1,7 @@
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
-import { CurrentUserService } from '../../services/current-user.service';
 
 @Component({
   imports: [RouterLink],
@@ -11,25 +9,12 @@ import { CurrentUserService } from '../../services/current-user.service';
   styleUrl: './nav-bar.css',
   templateUrl: './nav-bar.html',
 })
-export class NavBar implements OnInit {
+export class NavBar {
   private readonly auth = inject(FirebaseAuthService);
   private readonly router = inject(Router);
-  private readonly users = inject(CurrentUserService);
-  private readonly destroyRef = inject(DestroyRef);
 
   readonly isLoggingOut = signal(false);
   readonly logoutError = signal('');
-  readonly credits = signal(0);
-
-  ngOnInit(): void {
-    this.users
-      .getMe()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (user) => this.credits.set(user.profile.credits),
-        error: () => this.credits.set(0),
-      });
-  }
 
   async logout(): Promise<void> {
     if (this.isLoggingOut()) return;

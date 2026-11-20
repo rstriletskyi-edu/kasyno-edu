@@ -8,7 +8,7 @@ export interface CurrentUser {
   email: string | null;
   email_verified: boolean;
   display_name: string | null;
-  profile: { created_at: string | null; credits: number };
+  profile: { created_at: string | null };
 }
 
 @Injectable({ providedIn: 'root' })
