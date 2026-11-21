@@ -1,1 +1,165 @@
-<p>ai-provider-settings works!</p>
+<section class="ai-settings-card" [class.collapsed]="!isEditing()">
+  @if (!isEditing()) {
+    <div class="collapsed-tile">
+      <h2 class="collapsed-title">Konfiguracja modelu AI</h2>
+      <button
+        type="button"
+        class="edit-button"
+        (click)="startEditing()"
+        aria-label="Edytuj konfigurację modelu AI"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+          <path d="m15 5 4 4" />
+        </svg>
+        <span>Edytuj</span>
+      </button>
+    </div>
+  } @else {
+    <div class="card-header">
+      <h2>Konfiguracja modelu AI</h2>
+      <p class="description">
+        Wybierz dostawcę LLM używanego do oceny twoich odpowiedzi na pytania. Pozostawienie opcji
+        domyślnej użyje konfiguracji zapisanej po stronie serwera. Jednakże ta pozwala na
+        ograniczoną ilość ewaluacji.
+        <br /><br />
+        By zarejestrować model musisz wybrać jednego z dostępnych dostawców, a następnie podać
+        wymagane pola i zapisać.
+      </p>
+    </div>
+
+    <form
+      [formGroup]="llmProviderForm"
+      (ngSubmit)="saveSettings()"
+      class="provider-form"
+      novalidate
+    >
+      <div class="form-field">
+        <select id="provider" formControlName="provider">
+          @for (option of providerOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      @if (showProviderFields) {
+        <div class="form-field">
+          <label for="model">Model <span class="required-mark">*</span></label>
+          <input
+            id="model"
+            type="text"
+            formControlName="model"
+            [placeholder]="modelPlaceholder"
+            maxlength="128"
+            autocomplete="off"
+          />
+          @if (
+            llmProviderForm.controls.model.touched && llmProviderForm.controls.model.errors;
+            as errors
+          ) {
+            <small class="error-text" role="alert">
+              @if (errors['required']) {
+                Nazwa modelu jest wymagana.
+              } @else if (errors['maxlength']) {
+                Nazwa modelu może mieć maksymalnie 128 znaków.
+              }
+            </small>
+          }
+        </div>
+
+        @if (showApiKey) {
+          <div class="form-field">
+            <label for="apiKey">Klucz API (API Key) <span class="required-mark">*</span></label>
+            <input
+              id="apiKey"
+              type="password"
+              formControlName="apiKey"
+              placeholder="Wprowadź klucz API"
+              maxlength="512"
+              autocomplete="off"
+            />
+            @if (
+              llmProviderForm.controls.apiKey.touched && llmProviderForm.controls.apiKey.errors;
+              as errors
+            ) {
+              <small class="error-text" role="alert">
+                @if (errors['required']) {
+                  Klucz API jest wymagany.
+                } @else if (errors['maxlength']) {
+                  Klucz API może mieć maksymalnie 512 znaków.
+                }
+              </small>
+            }
+          </div>
+        }
+
+        @if (showBaseUrl) {
+          <div class="form-field">
+            <label for="baseUrl">
+              Adres endpointu (Base URL)
+              @if (isBaseUrlRequired) {
+                <span class="required-mark">*</span>
+              } @else {
+                <span class="optional-tag">(opcjonalnie)</span>
+              }
+            </label>
+            <input
+              id="baseUrl"
+              type="url"
+              formControlName="baseUrl"
+              [placeholder]="
+                selectedProvider === 'ollama'
+                  ? 'http://127.0.0.1:11434/v1'
+                  : 'https://api.openai.com/v1'
+              "
+              maxlength="512"
+              autocomplete="off"
+            />
+            <small class="field-hint">
+              @if (selectedProvider === 'ollama') {
+                Wymagany adres serwera Ollama z sufiksem <code>/v1</code> (protokół
+                <code>http</code> lub <code>https</code>).
+              } @else {
+                Zostaw puste dla oficjalnego API OpenAI lub podaj własny adres kompatybilny z OpenAI
+                z sufiksem <code>/v1</code>.
+              }
+            </small>
+            @if (
+              llmProviderForm.controls.baseUrl.touched && llmProviderForm.controls.baseUrl.errors;
+              as errors
+            ) {
+              <small class="error-text" role="alert">
+                @if (errors['required']) {
+                  Adres Base URL jest wymagany dla dostawcy Ollama.
+                } @else if (errors['pattern']) {
+                  Adres musi zaczynać się od <code>http://</code> lub <code>https://</code>.
+                } @else if (errors['maxlength']) {
+                  Adres Base URL może mieć maksymalnie 512 znaków.
+                }
+              </small>
+            }
+          </div>
+        }
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="save-button" [disabled]="llmProviderForm.invalid">
+          Zapisz
+        </button>
+
+        @if (saved()) {
+          <span class="save-status" role="status">Zapisano ustawienia</span>
+        }
+      </div>
+    </form>
+  }
+</section>

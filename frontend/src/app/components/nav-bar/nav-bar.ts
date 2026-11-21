@@ -1,6 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 
 @Component({
