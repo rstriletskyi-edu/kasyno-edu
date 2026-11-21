@@ -25,6 +25,21 @@
       <ul class="dropdown-menu">
         @for (game of games; track game.name) {
           <li class="dropdown-item">
+            <!--
+              zmienić na przyciski nie linki/hrefy i inne, 
+              bo one resetują stan strony, odświeżając ją. 
+              Menu ma się zwinąć i wywołać odpowiedni komponent gry,
+              zamiast nawigować na ten sam adres
+            -->
+            <!--
+              coś w tym stylu:
+                """
+                  <button (click)="switchGame(gameid)">{{ game.icon }} {{ game.name }}</button>
+                """
+
+                switchGame() należy wtedy zaimplementować, a 
+                nawigacja będzie w ramach komponentu <game /> 
+              -->
             <a href="#">{{ game.icon }} {{ game.name }}</a>
           </li>
         }

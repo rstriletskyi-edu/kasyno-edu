@@ -6,6 +6,7 @@ class AppError(Exception):
 
     status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR
     detail: str = "Internal server error"
+    headers: dict[str, str] | None = None
 
     def __init__(self, detail: str | None = None) -> None:
         if detail is not None:
@@ -16,3 +17,59 @@ class AppError(Exception):
 class FirebaseNotInitializedError(AppError):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     detail = "Firebase is not initialized"
+
+
+class NoFlashcardsAvailableError(AppError):
+    status_code = status.HTTP_404_NOT_FOUND
+    detail = "No available flashcards"
+
+
+class AuthenticationError(AppError):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    detail = "Authentication required or credentials invalid"
+    headers = {"WWW-Authenticate": "Bearer"}
+
+
+class AuthenticationUnavailableError(AppError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    detail = "Authentication service unavailable"
+
+
+class EmailNotVerifiedError(AppError):
+    status_code = status.HTTP_403_FORBIDDEN
+    detail = "Email verification required"
+
+
+class ProfileUnavailableError(AppError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    detail = "User profile service unavailable"
+
+
+class LlmNotConfiguredError(AppError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    detail = "LLM is not configured"
+
+
+class LlmSessionNotFoundError(AppError):
+    status_code = status.HTTP_404_NOT_FOUND
+    detail = "LLM session not found"
+
+
+class AnswerTooLongError(AppError):
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+    detail = "User answer exceeds the maximum length"
+
+
+class LlmTimeoutError(AppError):
+    status_code = status.HTTP_504_GATEWAY_TIMEOUT
+    detail = "LLM evaluation timed out"
+
+
+class FlashcardLookupTimeoutError(AppError):
+    status_code = status.HTTP_504_GATEWAY_TIMEOUT
+    detail = "Flashcard lookup timed out"
+
+
+class LlmEvaluationError(AppError):
+    status_code = status.HTTP_502_BAD_GATEWAY
+    detail = "LLM evaluation failed"

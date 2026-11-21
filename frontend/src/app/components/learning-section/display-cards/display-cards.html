@@ -21,3 +21,57 @@
       </div> -->
   </div>
 </div>
+
+@if (loading()) {
+  <p>Wczytywanie fiszek...</p>
+} @else {
+  <div class="display-card">
+    @if (loadError()) {
+      <p>Nie udało się pobrać fiszek.</p>
+    } @else if (finished()) {
+      <p>To już wszystkie fiszki.</p>
+    } @else if (currentCard(); as card) {
+      <div class="display-card-header">
+        <h2>Pytanie #{{ usedIds().length + 1 }}</h2>
+      </div>
+
+      <div class="display-card-content">
+        <p class="question-text">{{ card.question }}</p>
+        <div class="answer-window">
+          <textarea
+            placeholder="Wpisz swoją odpowiedź tutaj..."
+            [value]="answer()"
+            (input)="updateAnswer($any($event.target).value)"
+          ></textarea>
+        </div>
+      </div>
+    }
+
+    <div class="button-wrapper">
+      <button class="return-button" type="button" (click)="returnToMenu()">Powrót do menu</button>
+
+      @if (loadError()) {
+        <button class="submit-button" type="button" (click)="loadFlashcards()">
+          Spróbuj ponownie
+        </button>
+      } @else if (!finished() && currentCard()) {
+        <button
+          class="previous-button"
+          type="button"
+          [disabled]="!usedIds().length"
+          (click)="previousFlashcard()"
+        >
+          Poprzednie pytanie
+        </button>
+        <button
+          class="submit-button"
+          type="button"
+          [disabled]="!answer().trim()"
+          (click)="submitAnswer()"
+        >
+          Prześlij odpowiedź
+        </button>
+      }
+    </div>
+  </div>
+}
