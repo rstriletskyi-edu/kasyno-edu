@@ -1,0 +1,111 @@
+---
+- name: Set up dev server
+  hosts: dev
+  become: true
+
+  tasks:
+    # ---------- Base ----------
+    - name: Update apt cache and upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - git
+          - curl
+          - htop
+          - unattended-upgrades
+          - fail2ban
+          - iptables-persistent
+        state: present
+
+    # ---------- Docker ----------
+    - name: Install Docker and Compose
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+
+    - name: Start Docker and enable it at boot
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Let the ubuntu user run Docker
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    # ---------- Automatic security updates ----------
+    - name: Enable automatic security updates
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+        mode: "0644"
+
+    # ---------- Firewall inside the VM ----------
+    - name: Allow HTTP and HTTPS in the VM firewall
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: "{{ item }}"
+        ctstate: [NEW]
+        jump: ACCEPT
+        action: insert
+        rule_num: "1"
+        comment: "Allow web port {{ item }}"
+      loop: [80, 443]
+      notify: Save firewall rules
+
+    # ---------- SSH hardening ----------
+    - name: Harden SSH
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/01-hardening.conf
+        content: |
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          PermitRootLogin no
+          PubkeyAuthentication yes
+        mode: "0644"
+      notify: Restart SSH
+
+    # ---------- fail2ban ----------
+    - name: Configure fail2ban for SSH
+      ansible.builtin.copy:
+        dest: /etc/fail2ban/jail.d/sshd.local
+        content: |
+          [sshd]
+          enabled = true
+          backend = systemd
+          maxretry = 5
+          findtime = 10m
+          bantime = 1h
+        mode: "0644"
+      notify: Restart fail2ban
+
+    - name: Start fail2ban and enable it at boot
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Save firewall rules
+      ansible.builtin.command: netfilter-persistent save
+
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+    - name: Restart fail2ban
+      ansible.builtin.service:
+        name: fail2ban
+        state: restarted
