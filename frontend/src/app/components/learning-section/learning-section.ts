@@ -1,9 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { DisplayCards } from './display-cards/display-cards';
-import { LlmEvalService } from '../../services/llm-eval.service';
+import { LlmEvalService, LlmSessionRequest } from '../../services/llm-eval.service';
 import { HttpErrorResponse } from '@angular/common/http';
-
-import { environment } from '../../../environments/environment';
+import { LocalStorageService } from '../../services/local-storage.service';
+import {
+  LLM_PROVIDER_STORAGE_KEY,
+  LlmProviderSettings,
+} from '../settings-components/ai-provider-settings/ai-provider-settings';
 
 @Component({
   imports: [DisplayCards],
@@ -11,46 +14,59 @@ import { environment } from '../../../environments/environment';
   styleUrl: './learning-section.css',
   templateUrl: './learning-section.html',
 })
-export class LearningSection {
+export class LearningSection implements OnInit {
   protected evalService = inject(LlmEvalService);
+  protected storageService = inject(LocalStorageService);
 
   protected sessionId = signal<string | null>(null);
   protected error = signal<boolean>(false);
   protected errorMessage = signal<string>('');
+  protected llmSessionRequest = signal<LlmSessionRequest>({
+    api_key: '',
+    provider: '',
+    model: '',
+    base_url: '',
+  });
 
   displayCardVisible = signal(false);
+
+  ngOnInit() {
+    const savedSettings =
+      this.storageService.getItem<LlmProviderSettings>(LLM_PROVIDER_STORAGE_KEY);
+
+    if (savedSettings) {
+      this.llmSessionRequest.set({
+        api_key: savedSettings.apiKey ?? '',
+        provider: savedSettings.provider ?? '',
+        model: savedSettings.model ?? '',
+        base_url: savedSettings.baseUrl ?? '',
+      });
+    }
+  }
 
   goToDisplayCards() {
     this.error.set(false);
     this.errorMessage.set('');
 
-    this.evalService
-      .getLlmSession(
-        /*tu zamiast w jakiś sposób powinniśmy domyślnie załączyć osobiste ustawienie z providerem modelu aktualnie zalogowanego użytkownika*/
-        {
-          api_key: '',
-          provider: '',
-          model: '',
-          base_url: '',
-        },
-      )
-      .subscribe({
-        next: (sessionId) => {
-          if (sessionId === null || sessionId.trim() === '') {
-            this.error.set(true);
-            this.errorMessage.set('Nie udało się rozpocząć sesji: otrzymano puste session ID.');
-            return;
-          }
-          this.sessionId.set(sessionId);
-          this.displayCardVisible.set(true);
-        },
-        error: (err: HttpErrorResponse) => {
+    console.log(this.llmSessionRequest());
+
+    this.evalService.getLlmSession(this.llmSessionRequest()).subscribe({
+      next: (sessionId) => {
+        if (sessionId === null || sessionId.trim() === '') {
           this.error.set(true);
-          this.errorMessage.set(
-            `${err.status}: ${err.error?.detail}` || 'Wystąpił błąd podczas tworzenia sesji.',
-          );
-        },
-      });
+          this.errorMessage.set('Nie udało się rozpocząć sesji: otrzymano puste session ID.');
+          return;
+        }
+        this.sessionId.set(sessionId);
+        this.displayCardVisible.set(true);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.error.set(true);
+        this.errorMessage.set(
+          `${err.status}: ${err.error?.detail}` || 'Wystąpił błąd podczas tworzenia sesji.',
+        );
+      },
+    });
   }
 
   goBackToMenu() {
