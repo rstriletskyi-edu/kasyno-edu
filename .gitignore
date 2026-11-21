@@ -76,3 +76,6 @@ __pycache__/
 *.tfstate.*
 terraform.tfvars
 *.pem
+
+
+/infra-dev/ansible/secrets/*
