@@ -33,16 +33,7 @@ jobs:
       matrix:
         include:
           - name: backend
-            context: backend
-            build_args: ""
           - name: frontend
-            context: frontend
-            build_args: |
-              API_URL=/api
-              FIREBASE_API_KEY=${{ vars.FIREBASE_API_KEY }}
-              FIREBASE_AUTH_DOMAIN=${{ vars.FIREBASE_AUTH_DOMAIN }}
-              FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID }}
-              FIREBASE_APP_ID=${{ vars.FIREBASE_APP_ID }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -62,14 +53,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push backend
+        if: matrix.name == 'backend'
         uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.context }}
+          context: backend
           platforms: linux/arm64
           push: true
-          build-args: ${{ matrix.build_args }}
-          tags: ghcr.io/${{ github.repository }}/${{ matrix.name }}:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+
+      - name: Build and push frontend
+        if: matrix.name == 'frontend'
+        uses: docker/build-push-action@v7
+        with:
+          context: frontend
+          platforms: linux/arm64
+          push: true
+          build-args: |
+            API_URL=/api
+            FIREBASE_API_KEY=${{ vars.FIREBASE_API_KEY }}
+            FIREBASE_AUTH_DOMAIN=${{ vars.FIREBASE_AUTH_DOMAIN }}
+            FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID }}
+            FIREBASE_APP_ID=${{ vars.FIREBASE_APP_ID }}
+          tags: ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
 
   deploy:
     name: Deploy to dev server
