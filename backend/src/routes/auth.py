@@ -34,22 +34,16 @@ def get_me(
     summary="Create the initial Firestore profile for the authenticated user",
     description=(
         "Creates users/{uid} (created_at, credits=0) only if it does not exist; an existing "
-        "profile is never overwritten. The UID comes from the Firebase ID token. "
-        "Returns 201 when created, 200 when the profile already existed."
+        "profile is never overwritten and yields 409. The UID comes from the Firebase ID token."
     ),
     responses={
-        200: {"description": "Profile already existed"},
         401: {"description": "Missing or invalid Firebase ID token"},
+        409: {"description": "Profile already exists"},
         503: {"description": "Firebase Authentication or Firestore unavailable"},
     },
 )
 def register(
-    response: Response,
     user: AuthenticatedUser = Depends(get_current_user),
     service: UserService = Depends(get_user_service),
 ) -> CurrentUserResponse:
-    response.headers["Cache-Control"] = "no-store"
-    profile, created = service.register_user(user)
-    if not created:
-        response.status_code = status.HTTP_200_OK
-    return profile
+    return service.register_user(user)

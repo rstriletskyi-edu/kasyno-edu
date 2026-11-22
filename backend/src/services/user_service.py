@@ -8,7 +8,11 @@ from google.cloud.firestore import Client, SERVER_TIMESTAMP
 from pydantic import ValidationError
 
 from src.models.auth import AuthenticatedUser, CurrentUserResponse, UserProfile
-from src.utils.exceptions import AuthenticationError, ProfileUnavailableError
+from src.utils.exceptions import (
+    AuthenticationError,
+    ProfileAlreadyExistsError,
+    ProfileUnavailableError,
+)
 
 
 class UserService:
@@ -136,18 +140,16 @@ class UserService:
 
         return CurrentUserResponse(**user.model_dump(), profile=profile)
 
-    def register_user(self, user: AuthenticatedUser) -> tuple[CurrentUserResponse, bool]:
-        """Create users/{uid} only if it does not exist. Returns (response, created)."""
+    def register_user(self, user: AuthenticatedUser) -> CurrentUserResponse:
+        """Create users/{uid} only if it does not exist; an existing profile is never changed."""
         self._validate_profile_uid(user.uid)
 
         try:
             reference = self._db.collection("users").document(user.uid)
-            created = True
             try:
                 reference.create({"created_at": SERVER_TIMESTAMP, "credits": 0})
             except AlreadyExists:
-                # Existing or concurrently created profile stays untouched.
-                created = False
+                raise ProfileAlreadyExistsError() from None
             snapshot = reference.get()
             if not snapshot.exists:
                 raise ProfileUnavailableError()
@@ -155,4 +157,4 @@ class UserService:
         except (GoogleAPICallError, RetryError, GoogleAuthError, ValidationError):
             raise ProfileUnavailableError() from None
 
-        return CurrentUserResponse(**user.model_dump(), profile=profile), created
+        return CurrentUserResponse(**user.model_dump(), profile=profile)

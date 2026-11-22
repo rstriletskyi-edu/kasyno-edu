@@ -66,9 +66,9 @@ already copied into another tool.
 
 **Profile timing:** the profile `users/{uid}` (`created_at`, `credits: 0`) is created
 by `POST /api/auth/register`, called right after Firebase registration (and after
-every Google/Facebook sign-in, because it is idempotent: `201` when created, `200`
-when it already existed, never overwritten). It requires a valid token but not a
-verified email. `GET /api/auth/me` only reads; a missing profile returns `503`.
+every Google/Facebook sign-in). It returns `201` when the profile is created and
+`409` when it already exists (an existing profile is never overwritten); the frontend
+treats `409` as success. It requires a valid token but not a verified email. `GET /api/auth/me` only reads; a missing profile returns `503`.
 
 ## 3. Request headers and Angular integration
 

@@ -45,6 +45,11 @@ class ProfileUnavailableError(AppError):
     detail = "User profile service unavailable"
 
 
+class ProfileAlreadyExistsError(AppError):
+    status_code = status.HTTP_409_CONFLICT
+    detail = "User profile already exists"
+
+
 class LlmNotConfiguredError(AppError):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     detail = "LLM is not configured"

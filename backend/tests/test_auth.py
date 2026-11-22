@@ -280,7 +280,6 @@ def test_register_creates_missing_profile(client: TestClient, profile_db: Mock) 
     response = client.post("/api/auth/register", headers={"Authorization": "Bearer test-token"})
 
     assert response.status_code == 201
-    assert response.headers["cache-control"] == "no-store"
     assert response.json()["uid"] == "firebase-user-123"
     reference.create.assert_called_once_with({"created_at": SERVER_TIMESTAMP, "credits": 0})
     reference.set.assert_not_called()
@@ -288,7 +287,7 @@ def test_register_creates_missing_profile(client: TestClient, profile_db: Mock) 
     profile_db.collection.return_value.document.assert_called_once_with("firebase-user-123")
 
 
-def test_register_existing_profile_is_not_overwritten(
+def test_register_existing_profile_returns_409_and_is_not_overwritten(
     client: TestClient, profile_db: Mock
 ) -> None:
     reference = profile_db.collection.return_value.document.return_value
@@ -296,8 +295,8 @@ def test_register_existing_profile_is_not_overwritten(
 
     response = client.post("/api/auth/register", headers={"Authorization": "Bearer test-token"})
 
-    assert response.status_code == 200
-    assert response.json()["profile"]["credits"] == 0
+    assert response.status_code == 409
+    assert response.json() == {"detail": "User profile already exists"}
     reference.create.assert_called_once_with({"created_at": SERVER_TIMESTAMP, "credits": 0})
     reference.set.assert_not_called()
     reference.update.assert_not_called()
