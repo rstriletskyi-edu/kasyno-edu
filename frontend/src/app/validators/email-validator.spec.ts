@@ -18,12 +18,16 @@ describe('emailTldValidator', () => {
     expect(validate(email)).toBeNull();
   });
 
-  it.each(['user@localhost', 'user@example', 'user@example.c', 'user@example.123', 'user@', 'userexample.com'])(
-    'rejects %s',
-    (email) => {
-      expect(validate(email)).toEqual({ emailTld: true });
-    },
-  );
+  it.each([
+    'user@localhost',
+    'user@example',
+    'user@example.c',
+    'user@example.123',
+    'user@',
+    'userexample.com',
+  ])('rejects %s', (email) => {
+    expect(validate(email)).toEqual({ emailTld: true });
+  });
 
   it('ignores empty values (handled by required)', () => {
     expect(validate('')).toBeNull();

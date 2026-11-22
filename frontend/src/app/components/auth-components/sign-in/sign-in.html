@@ -15,7 +15,7 @@
       emailTld
       required
     />
-    @if ((emailField.errors?.['email'] || emailField.errors?.['emailTld'])) {
+    @if (emailField.errors?.['email'] || emailField.errors?.['emailTld']) {
       <span class="message error" role="alert">Podaj prawidłowy adres e-mail.</span>
     }
   </label>
