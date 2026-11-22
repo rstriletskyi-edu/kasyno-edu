@@ -4,7 +4,7 @@ import { Flashcard, FlashcardsService } from '../../../services/flashcards.servi
 import {
   LlmEvalService,
   EvaluationRequest,
-  EvaluationResult,
+  EvalResponse,
 } from '../../../services/llm-eval.service';
 
 @Component({
@@ -26,6 +26,7 @@ export class DisplayCards {
   readonly loadError = signal(false);
   readonly finished = signal(false);
   readonly answer = signal('');
+  readonly evaluationResult = signal<EvalResponse | null>(null);
 
   constructor() {
     this.loadFlashcards();
@@ -85,29 +86,36 @@ export class DisplayCards {
   submitAnswer() {
     //tak samo jak w innych funkcjach obsłuż flagę błędu i ładowania
 
-    this.evalService
-      .getAnswerEvaluation(
-        this.sessionId()! /*nie możemy dodać null na razie "!"" ignoruje*/,
-        /*obiekt EvaluationRequest z llm-eval.service.ts*/ {
-          question_id: this.currentCard()?.id! /*tu tak samo nie możemy dopuścić do null id*/,
-          user_answer: this.answer(),
-        },
-      )
-      .subscribe({
-        next: (evaluation) => {
-          // tutaj przypisanie wyniku do zmiennej wyświetlającej wyniki wg modelu EvaluationResult z llm-eval.service.ts
-        },
-        error: (err: HttpErrorResponse) => {
-          // obsługa błędów
-        },
-      });
-
     if (!this.answer().trim()) return;
 
     const flashcard = this.currentCard();
     if (!flashcard) return;
 
-    this.usedIds.update((ids) => [...ids, flashcard.id]);
-    this.loadFlashcards();
+    this.loading.set(true);
+    this.loadError.set(false);
+    this.evaluationResult.set(null);
+
+    this.evalService
+      .getAnswerEvaluation(
+        this.sessionId()! /*nie możemy dodać null na razie "!"" ignoruje*/,
+        /*obiekt EvaluationRequest z llm-eval.service.ts*/ {
+          question_id: flashcard.id /*tu tak samo nie możemy dopuścić do null id*/,
+          user_answer: this.answer(),
+        },
+      )
+      .subscribe({
+        next: (evaluation: EvalResponse) => {
+          // tutaj przypisanie wyniku do zmiennej wyświetlającej wyniki wg modelu EvaluationResult z llm-eval.service.ts
+          this.evaluationResult.set(evaluation);
+
+          this.usedIds.update((ids) => [...ids, flashcard.id]);
+          this.loadFlashcards();
+        },
+        error: (err: HttpErrorResponse) => {
+          // obsługa błędów
+          this.loadError.set(true);
+          this.loading.set(false);
+        },
+      });
   }
 }

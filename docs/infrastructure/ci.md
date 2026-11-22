@@ -4,11 +4,11 @@ The [CI workflow](../../.github/workflows/ci.yml) runs only for pull requests ta
 
 ## Workflow files
 
-| File | Responsibility |
-| --- | --- |
-| [ci.yml](../../.github/workflows/ci.yml) | Starts on PRs, detects changed folders, calls the relevant checks, and runs CI Gate. |
-| [ci-frontend.yml](../../.github/workflows/ci-frontend.yml) | Reusable workflow containing frontend checks. |
-| [ci-backend.yml](../../.github/workflows/ci-backend.yml) | Reusable workflow containing backend checks. |
+| File                                                       | Responsibility                                                                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [ci.yml](../../.github/workflows/ci.yml)                   | Starts on PRs, detects changed folders, calls the relevant checks, and runs CI Gate. |
+| [ci-frontend.yml](../../.github/workflows/ci-frontend.yml) | Reusable workflow containing frontend checks.                                        |
+| [ci-backend.yml](../../.github/workflows/ci-backend.yml)   | Reusable workflow containing backend checks.                                         |
 
 Only `ci.yml` listens for PR events. The other files use `workflow_call`, so they run when `ci.yml` calls them. Edit the corresponding file to maintain each project's checks.
 

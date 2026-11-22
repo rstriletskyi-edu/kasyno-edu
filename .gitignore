@@ -1,4 +1,5 @@
 # ANGULAR
+node_modules/*
 
 # Compiled output
 /frontend/dist

@@ -75,11 +75,11 @@ The header identifies the signing algorithm (`RS256`) and public-key identifier
 }
 ```
 
-| Claim | What it tells the backend |
-| --- | --- |
-| `sub` | Which Firebase user the token represents: the UID. |
-| `aud`, `iss` | Which Firebase project issued the token. |
-| `iat`, `exp` | Issue and expiry times, expressed in Unix seconds. |
+| Claim                             | What it tells the backend                                  |
+| --------------------------------- | ---------------------------------------------------------- |
+| `sub`                             | Which Firebase user the token represents: the UID.         |
+| `aud`, `iss`                      | Which Firebase project issued the token.                   |
+| `iat`, `exp`                      | Issue and expiry times, expressed in Unix seconds.         |
 | `email`, `email_verified`, `name` | Available identity information. Some fields can be absent. |
 
 The payload is readable, not encrypted. The signature lets the Admin SDK detect
@@ -313,12 +313,12 @@ separate requests. Profile/database loading remains the feature's responsibility
 
 ## 7. What persists between requests?
 
-| Item | Who keeps it? | What our backend does |
-| --- | --- | --- |
-| Browser login session and refresh token | Firebase browser SDK | Does not implement its own token-storage/session table. |
-| ID token | Firebase SDK supplies it to Angular | Verifies the token presented on each protected request. Does not save it in Firestore. |
-| `AuthenticatedUser` | Request handling in FastAPI | Passes this Python object to the route for the current request. |
-| Profile | Firestore | Reads/creates it when `/me` runs. |
+| Item                                    | Who keeps it?                       | What our backend does                                                                  |
+| --------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------- |
+| Browser login session and refresh token | Firebase browser SDK                | Does not implement its own token-storage/session table.                                |
+| ID token                                | Firebase SDK supplies it to Angular | Verifies the token presented on each protected request. Does not save it in Firestore. |
+| `AuthenticatedUser`                     | Request handling in FastAPI         | Passes this Python object to the route for the current request.                        |
+| Profile                                 | Firestore                           | Reads/creates it when `/me` runs.                                                      |
 
 ID tokens last about one hour. The SDK manages obtaining replacement tokens;
 asking for a token does not necessarily mean a fresh login or network request.
@@ -332,13 +332,13 @@ token in another client is not revoked by this local logout alone.
 
 ## 8. Similar function names: which one do I use?
 
-| Name | Location | Returns / purpose |
-| --- | --- | --- |
-| `FirebaseAuthService.getCurrentUser()` | Angular auth service | Firebase SDK user restored in the browser. |
-| `get_current_user()` | FastAPI dependencies | Token-verified `AuthenticatedUser`, with no database lookup. |
-| `get_verified_user()` | FastAPI dependencies | The same identity after requiring verified email. |
-| `get_user_service()` | FastAPI dependencies | A profile-service instance, not a user. |
-| `UserService.get_current_user(user)` | Backend profile service | `CurrentUserResponse`, after Firestore profile lookup/provisioning. |
+| Name                                   | Location                | Returns / purpose                                                   |
+| -------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
+| `FirebaseAuthService.getCurrentUser()` | Angular auth service    | Firebase SDK user restored in the browser.                          |
+| `get_current_user()`                   | FastAPI dependencies    | Token-verified `AuthenticatedUser`, with no database lookup.        |
+| `get_verified_user()`                  | FastAPI dependencies    | The same identity after requiring verified email.                   |
+| `get_user_service()`                   | FastAPI dependencies    | A profile-service instance, not a user.                             |
+| `UserService.get_current_user(user)`   | Backend profile service | `CurrentUserResponse`, after Firestore profile lookup/provisioning. |
 
 Source files: [Angular auth](../../frontend/src/app/services/firebase-auth.service.ts),
 [interceptor](../../frontend/src/app/interceptors/auth.interceptor.ts),

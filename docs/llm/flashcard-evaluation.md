@@ -35,12 +35,12 @@ written to Firestore.
 Every field is optional. An empty body `{}` is valid. A missing body is valid.
 Blank or whitespace-only strings are treated as omitted.
 
-| Field | Required | Limit | When omitted |
-| --- | --- | --- | --- |
-| `api_key` | No | 512 characters | `LLM_API_KEY` from the server `.env` |
-| `provider` | No | 32 characters | `LLM_PROVIDER` from the server `.env` |
-| `model` | No | 128 characters | `LLM_MODEL` from the server `.env` |
-| `base_url` | No | 512 characters, `http` or `https` | `LLM_BASE_URL` from the server `.env` |
+| Field      | Required | Limit                             | When omitted                          |
+| ---------- | -------- | --------------------------------- | ------------------------------------- |
+| `api_key`  | No       | 512 characters                    | `LLM_API_KEY` from the server `.env`  |
+| `provider` | No       | 32 characters                     | `LLM_PROVIDER` from the server `.env` |
+| `model`    | No       | 128 characters                    | `LLM_MODEL` from the server `.env`    |
+| `base_url` | No       | 512 characters, `http` or `https` | `LLM_BASE_URL` from the server `.env` |
 
 Send the model endpoint as `base_url` or `url`. Both names are accepted. Include
 the `/v1` suffix for an OpenAI-compatible host. A value that is not `http` or
@@ -52,21 +52,21 @@ length, and session lifetime stay on the server.
 
 `provider` is trimmed and compared case-insensitively. Accepted names:
 
-| `provider` | What it calls | Extra requirement |
-| --- | --- | --- |
-| `openai` | OpenAI, or any OpenAI-compatible host | Optional `base_url`. Empty means the official OpenAI API. |
-| `ollama` | Ollama through its OpenAI-compatible API | `base_url` is required, from this request or from `LLM_BASE_URL`. Ollama ignores the key, but a non-empty `api_key` is still required. |
-| `google_genai` | Google Gemini | Package `langchain-google-genai` must be installed on the server. |
-| `anthropic` | Anthropic | Package `langchain-anthropic` must be installed on the server. |
+| `provider`     | What it calls                            | Extra requirement                                                                                                                      |
+| -------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `openai`       | OpenAI, or any OpenAI-compatible host    | Optional `base_url`. Empty means the official OpenAI API.                                                                              |
+| `ollama`       | Ollama through its OpenAI-compatible API | `base_url` is required, from this request or from `LLM_BASE_URL`. Ollama ignores the key, but a non-empty `api_key` is still required. |
+| `google_genai` | Google Gemini                            | Package `langchain-google-genai` must be installed on the server.                                                                      |
+| `anthropic`    | Anthropic                                | Package `langchain-anthropic` must be installed on the server.                                                                         |
 
 A session is stored only when a key and a usable provider are both resolved.
 Otherwise the response is `503` and there is no `session_id`:
 
-| `detail` | Cause |
-| --- | --- |
-| `LLM API key is not configured` | No `api_key` in the body and no `LLM_API_KEY` on the server |
-| `Model URL is required for provider ollama` | Provider is `ollama` and neither the body nor `LLM_BASE_URL` has a URL |
-| `Unsupported LLM provider: <name>` | Name is not in the table above |
+| `detail`                                           | Cause                                                                         |
+| -------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `LLM API key is not configured`                    | No `api_key` in the body and no `LLM_API_KEY` on the server                   |
+| `Model URL is required for provider ollama`        | Provider is `ollama` and neither the body nor `LLM_BASE_URL` has a URL        |
+| `Unsupported LLM provider: <name>`                 | Name is not in the table above                                                |
 | `LLM provider package is not installed: <package>` | `google_genai` or `anthropic` was selected, but that package is not installed |
 
 ### Response `201`
@@ -129,10 +129,10 @@ Do not send `api_key`, `provider`, `model`, `base_url`, `question`, or
 `expected_answer` here. The session already has the model settings. The server
 loads the question and the expected answer with `question_id`.
 
-| Field | Required | Limit |
-| --- | --- | --- |
-| `question_id` | Yes | Non-empty flashcard id |
-| `user_answer` | Yes | Present in the JSON. Schema max is 20000 characters. The server also rejects a trimmed value longer than `LLM_MAX_ANSWER_CHARS` (default 2000) with `422`. |
+| Field         | Required | Limit                                                                                                                                                      |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `question_id` | Yes      | Non-empty flashcard id                                                                                                                                     |
+| `user_answer` | Yes      | Present in the JSON. Schema max is 20000 characters. The server also rejects a trimmed value longer than `LLM_MAX_ANSWER_CHARS` (default 2000) with `422`. |
 
 An empty or whitespace-only `user_answer` does not call the model. The response
 is `200`. `credits_received` is `score * 10 // 100` with the current `linear`
@@ -149,21 +149,21 @@ engine, so it is an integer from 0 to 10.
 
 ### Response `200`
 
-| Field | Type | Meaning |
-| --- | --- | --- |
-| `score` | integer `0`–`100` | How much of the expected fact is covered |
-| `credits_received` | integer `0`–`10` | Credits from the score. The `linear` engine is `score * 10 // 100`. |
-| `verdict` | `correct`, `partial`, or `incorrect` | Overall result |
-| `explanation` | string, 1–500 characters | One or two Polish sentences for the learner |
+| Field              | Type                                 | Meaning                                                             |
+| ------------------ | ------------------------------------ | ------------------------------------------------------------------- |
+| `score`            | integer `0`–`100`                    | How much of the expected fact is covered                            |
+| `credits_received` | integer `0`–`10`                     | Credits from the score. The `linear` engine is `score * 10 // 100`. |
+| `verdict`          | `correct`, `partial`, or `incorrect` | Overall result                                                      |
+| `explanation`      | string, 1–500 characters             | One or two Polish sentences for the learner                         |
 
 Other statuses:
 
-| Status | When |
-| --- | --- |
-| `404` | Unknown session, expired session, another user's session, or an unknown flashcard id |
-| `422` | Missing field or an answer over the length limit |
-| `502` | The model provider failed or returned an unusable result. `detail` is `LLM evaluation failed` |
-| `504` | The model did not finish within `LLM_TIMEOUT_SECONDS`. `detail` is `LLM evaluation timed out` |
+| Status | When                                                                                          |
+| ------ | --------------------------------------------------------------------------------------------- |
+| `404`  | Unknown session, expired session, another user's session, or an unknown flashcard id          |
+| `422`  | Missing field or an answer over the length limit                                              |
+| `502`  | The model provider failed or returned an unusable result. `detail` is `LLM evaluation failed` |
+| `504`  | The model did not finish within `LLM_TIMEOUT_SECONDS`. `detail` is `LLM evaluation timed out` |
 
 Domain errors use `{ "detail": "<message>" }`. A malformed body uses FastAPI's
 `422` validation list in `detail`.
