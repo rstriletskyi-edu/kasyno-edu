@@ -77,7 +77,6 @@ export class DisplayCards {
     this.loadError.set(false);
     this.isFlipped.set(true);
 
-
     this.flashcardsService.getConcreteFlashcard(lastId).subscribe({
       next: (flashcard) => {
         this.currentCard.set(flashcard);
@@ -130,16 +129,14 @@ export class DisplayCards {
     if (!flashcard) return;
     this.loadFlashcards();
   }
-  
+
   //Funkcja odtwarzająca animację monet, obecnie wywoływana przez testCoinAnimation z góry ustaloną liczbą monet.
   playCoinAnimation(tokens: number) {
     if (tokens <= 0 || this.coinAnimation()) return;
 
     const particles = Math.min(tokens, 10);
 
-    this.coinParticles.set(
-      Array.from({ length: particles }, (_, i) => i)
-    );
+    this.coinParticles.set(Array.from({ length: particles }, (_, i) => i));
 
     this.coinAnimation.set(true);
 
@@ -156,14 +153,13 @@ export class DisplayCards {
 
   //Funkcja wywołująca animację monet i resetująca kartę, do potencjalnej modyfikacji w przyszlosci.
   nextFlashcard(event: MouseEvent) {
-  const button = event.currentTarget as HTMLElement;
-  const rect = button.getBoundingClientRect();
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
 
-  this.coinStartX.set(rect.left + rect.width / 2);
-  this.coinStartY.set(rect.top - rect.height*2);
+    this.coinStartX.set(rect.left + rect.width / 2);
+    this.coinStartY.set(rect.top - rect.height * 2);
 
-  this.testCoinAnimation();
-  this.resetCard();
-}
-  
+    this.testCoinAnimation();
+    this.resetCard();
+  }
 }

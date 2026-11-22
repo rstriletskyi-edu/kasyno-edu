@@ -1,22 +1,21 @@
 <div class="display-card-background">
   @if (coinAnimation()) {
-  <div class="coin-animation">
-    @for (coin of coinParticles(); track $index) {
-      <!-- Modyfikacja opóźnienia animacji dla każdej monety -->
-      <div
-        class="flying-coin"
-        [style.left.px]="coinStartX()"
-        [style.top.px]="coinStartY()"
-        [style.animation-delay.ms]="$index * 120" 
-      >
-        🪙
-      </div>
-    }
-  </div>
-}
+    <div class="coin-animation">
+      @for (coin of coinParticles(); track $index) {
+        <!-- Modyfikacja opóźnienia animacji dla każdej monety -->
+        <div
+          class="flying-coin"
+          [style.left.px]="coinStartX()"
+          [style.top.px]="coinStartY()"
+          [style.animation-delay.ms]="$index * 120"
+        >
+          🪙
+        </div>
+      }
+    </div>
+  }
   <div class="display-card-container">
     <div class="display-card-inner" [class.flipped]="isFlipped()">
-
       <!-- Przednia strona -->
       <div class="display-card display-card-front">
         @if (currentCard(); as card) {
@@ -48,7 +47,7 @@
           <p>Nie udało się pobrać fiszki.</p>
         } @else if (finished()) {
           <p>To już wszystkie fiszki.</p>
-        } @else if (isFlipped()){
+        } @else if (isFlipped()) {
           <div class="display-card-header">
             <h2>Ilość żetonów zdobyta za odpowiedź</h2>
           </div>
@@ -62,14 +61,11 @@
           </div>
         }
       </div>
-
     </div>
   </div>
 
   <div class="button-wrapper">
-    <button class="return-button" type="button" (click)="returnToMenu()">
-      Powrót do menu
-    </button>
+    <button class="return-button" type="button" (click)="returnToMenu()">Powrót do menu</button>
 
     @if (loadError()) {
       <button class="submit-button" type="button" (click)="loadFlashcards()">

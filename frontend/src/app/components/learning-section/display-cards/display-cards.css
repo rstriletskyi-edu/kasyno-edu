@@ -32,7 +32,7 @@
 }
 
 .display-card-background.flipped {
-    transform: rotateX(180deg);
+  transform: rotateX(180deg);
 }
 
 .display-card-container {
@@ -89,9 +89,9 @@
 .display-card-header {
   background: #465875;
   color: #000000;
-  border-top: 5px solid #8796AC;
-  border-left: 5px solid #8796AC;
-  border-right: 5px solid #8796AC;
+  border-top: 5px solid #8796ac;
+  border-left: 5px solid #8796ac;
+  border-right: 5px solid #8796ac;
   border-radius: 16px 16px 0px 0px;
   display: flex;
   text-align: center;
@@ -110,11 +110,11 @@
 }
 
 .display-card-content {
-  background: #33445E;
+  background: #33445e;
   color: #000000;
   border-top: 5px transparent;
-  border-left: 5px solid #8796AC;
-  border-right: 5px solid #8796AC;
+  border-left: 5px solid #8796ac;
+  border-right: 5px solid #8796ac;
   height: fit-content;
   min-height: 20%;
   display: flex;
@@ -127,9 +127,9 @@
 .display-card-answer {
   background: #465875;
   color: #000000;
-  border-left: 5px solid #8796AC;
-  border-right: 5px solid #8796AC;
-  border-bottom: 5px solid #8796AC;
+  border-left: 5px solid #8796ac;
+  border-right: 5px solid #8796ac;
+  border-bottom: 5px solid #8796ac;
   border-radius: 0px 0px 16px 16px;
   width: 100%;
   min-height: 10%;
@@ -138,22 +138,22 @@
 }
 
 .display-card-answer textarea {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    padding: 10px;
-    height: auto;
-    min-height: 10%;
-    max-height: 200px;
-    border-radius: 0px 0px 16px 16px;
-    box-sizing: border-box;
-    resize: none;
-    field-sizing: content;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overflow-wrap: anywhere;
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px;
+  height: auto;
+  min-height: 10%;
+  max-height: 200px;
+  border-radius: 0px 0px 16px 16px;
+  box-sizing: border-box;
+  resize: none;
+  field-sizing: content;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
 }
 
 .button-wrapper {
