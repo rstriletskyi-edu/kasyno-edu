@@ -13,6 +13,7 @@ def linear_credits(score: int) -> int:
 
 _ENGINES: dict[str, CreditsCalculator] = {
     "proportional": lambda score: max(0, min(100, score)) * 10 // 100,
+    "linear": linear_credits
 }
 
 
