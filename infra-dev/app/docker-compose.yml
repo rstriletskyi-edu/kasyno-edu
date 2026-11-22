@@ -14,7 +14,6 @@ services:
     image: ghcr.io/rstriletskyi-edu/kasyno-edu/frontend:${IMAGE_TAG}
     restart: unless-stopped
 
-
   backend:
     image: ghcr.io/rstriletskyi-edu/kasyno-edu/backend:${IMAGE_TAG}
     env_file: .env

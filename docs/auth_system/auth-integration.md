@@ -29,12 +29,12 @@ sequenceDiagram
     API-->>Angular: 200 JSON identity and profile
 ```
 
-| Component | Responsibility |
-| --- | --- |
-| Angular | Sign-in forms, Firebase SDK session, attaching ID tokens and displaying API results. |
-| Firebase Authentication | Accounts, provider sign-in and issuing authentication tokens. |
-| FastAPI | Token verification, access checks and identifying the caller from the verified UID. |
-| Cloud Firestore | Application profiles in `users/{uid}`. Accessed by the backend in this flow. |
+| Component               | Responsibility                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------ |
+| Angular                 | Sign-in forms, Firebase SDK session, attaching ID tokens and displaying API results. |
+| Firebase Authentication | Accounts, provider sign-in and issuing authentication tokens.                        |
+| FastAPI                 | Token verification, access checks and identifying the caller from the verified UID.  |
+| Cloud Firestore         | Application profiles in `users/{uid}`. Accessed by the backend in this flow.         |
 
 Firebase Authentication can sign users in without Firestore. **The current `/me`
 endpoint also reads a profile, so it requires a working Firestore database.**
@@ -42,12 +42,12 @@ The Angular route guard controls navigation; the backend independently checks AP
 
 ## 2. Registration, login and session
 
-| Method | Current flow |
-| --- | --- |
+| Method                      | Current flow                                                                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Email/password registration | `createUserWithEmailAndPassword()` creates the Auth account, then `sendEmailVerification()` sends the confirmation email. Angular opens `/auth/account-activation`. |
-| Email/password login | `signInWithEmailAndPassword()` signs in. Verified users go to `/dashboard`; others go to account activation. |
-| Google | `signInWithPopup()` with `GoogleAuthProvider`. The same operation is used by the register and login buttons. |
-| Facebook | `signInWithPopup()` with `FacebookAuthProvider`. The same operation is used by the register and login buttons. |
+| Email/password login        | `signInWithEmailAndPassword()` signs in. Verified users go to `/dashboard`; others go to account activation.                                                        |
+| Google                      | `signInWithPopup()` with `GoogleAuthProvider`. The same operation is used by the register and login buttons.                                                        |
+| Facebook                    | `signInWithPopup()` with `FacebookAuthProvider`. The same operation is used by the register and login buttons.                                                      |
 
 For Google/Facebook, a first successful sign-in creates the Firebase Auth account.
 All current sign-in paths check `user.emailVerified` before opening the dashboard.
@@ -119,6 +119,7 @@ Those operations use Firebase directly.
 
    This checks the signature, expiry and Firebase project claims, plus revocation
    and account status. Reading a JWT payload alone is not verification.
+
 4. `AuthenticatedUser` validates the selected claims. The verified `uid` identifies
    the caller; the backend never accepts a caller-supplied UID as proof of identity.
 5. `/me` uses `get_verified_user`, which requires `email_verified=True`.
@@ -148,14 +149,14 @@ The JSON response uses these exact field names:
 }
 ```
 
-| Field | JSON type | Meaning |
-| --- | --- | --- |
-| `uid` | string | Stable Firebase UID from the verified token. |
-| `email` | string or null | Email from the verified token, if present. |
-| `email_verified` | boolean | Always `true` for a successful `/me` response under the current policy. |
-| `display_name` | string or null | Firebase token's `name` claim, if present. |
-| `profile` | object | Profile selected using the verified UID. |
-| `profile.created_at` | date-time string or null | Creation timestamp; nullable for existing profiles without one. |
+| Field                | JSON type                | Meaning                                                                 |
+| -------------------- | ------------------------ | ----------------------------------------------------------------------- |
+| `uid`                | string                   | Stable Firebase UID from the verified token.                            |
+| `email`              | string or null           | Email from the verified token, if present.                              |
+| `email_verified`     | boolean                  | Always `true` for a successful `/me` response under the current policy. |
+| `display_name`       | string or null           | Firebase token's `name` claim, if present.                              |
+| `profile`            | object                   | Profile selected using the verified UID.                                |
+| `profile.created_at` | date-time string or null | Creation timestamp; nullable for existing profiles without one.         |
 
 All listed fields are returned. Additional Firestore document fields are not
 automatically exposed. A successful response includes `Cache-Control: no-store`.
@@ -169,13 +170,13 @@ Application errors use a JSON object with a string `detail`:
 { "detail": "Authentication required or credentials invalid" }
 ```
 
-| HTTP status | Exact `detail` value | Meaning and frontend action |
-| --- | --- | --- |
-| `401` | `Authentication required or credentials invalid` | Missing/wrong Bearer header; invalid, expired or revoked token; disabled/deleted account; or rejected identity claims. Ask the user to sign in again. Includes `WWW-Authenticate: Bearer`. |
-| `403` | `Email verification required` | Token accepted, but email is unverified. Direct the user to account activation. |
-| `503` | `Authentication service unavailable` | Firebase Auth is uninitialized or verification infrastructure failed. Show a service error and allow retry. |
-| `503` | `User profile service unavailable` | Profile access or profile-data validation failed. Show a service error and allow retry. |
-| `503` | `Firebase is not initialized` | Firestore initialization dependency is unavailable. Check backend configuration. |
+| HTTP status | Exact `detail` value                             | Meaning and frontend action                                                                                                                                                                |
+| ----------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `401`       | `Authentication required or credentials invalid` | Missing/wrong Bearer header; invalid, expired or revoked token; disabled/deleted account; or rejected identity claims. Ask the user to sign in again. Includes `WWW-Authenticate: Bearer`. |
+| `403`       | `Email verification required`                    | Token accepted, but email is unverified. Direct the user to account activation.                                                                                                            |
+| `503`       | `Authentication service unavailable`             | Firebase Auth is uninitialized or verification infrastructure failed. Show a service error and allow retry.                                                                                |
+| `503`       | `User profile service unavailable`               | Profile access or profile-data validation failed. Show a service error and allow retry.                                                                                                    |
+| `503`       | `Firebase is not initialized`                    | Firestore initialization dependency is unavailable. Check backend configuration.                                                                                                           |
 
 Use HTTP status for frontend control flow and read `error.error.detail` for the
 API message. These are API errors; Firebase SDK sign-in errors are handled
@@ -257,12 +258,12 @@ The frontend and backend must point to the same Firebase project.
 For deployment, configure the actual HTTPS frontend origin in CORS and the API
 URL used by Angular.
 
-| Configuration | Where it belongs | Private? |
-| --- | --- | --- |
-| Firebase web API key, auth domain, project ID and web app ID | Angular web configuration | No; included in the browser bundle. Apply appropriate API restrictions. |
-| Firebase Admin service-account JSON/private key | Backend only | **Yes. Never place it in Angular or commit it.** |
-| Facebook App Secret | Facebook/Firebase provider configuration | **Yes. Never include it in the frontend `.env`.** |
-| ID and refresh tokens | Firebase SDK session; ID token in API Authorization header | **Yes. Do not share, log or commit them.** |
+| Configuration                                                | Where it belongs                                           | Private?                                                                |
+| ------------------------------------------------------------ | ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Firebase web API key, auth domain, project ID and web app ID | Angular web configuration                                  | No; included in the browser bundle. Apply appropriate API restrictions. |
+| Firebase Admin service-account JSON/private key              | Backend only                                               | **Yes. Never place it in Angular or commit it.**                        |
+| Facebook App Secret                                          | Facebook/Firebase provider configuration                   | **Yes. Never include it in the frontend `.env`.**                       |
+| ID and refresh tokens                                        | Firebase SDK session; ID token in API Authorization header | **Yes. Do not share, log or commit them.**                              |
 
 In Firebase Console, enable the intended Authentication providers and authorize
 `localhost` and the deployed frontend domain. Google requires its provider setup;
@@ -302,11 +303,11 @@ user across requests; no separate backend session table is currently used.
 
 ### Reuse the existing dependencies
 
-| Use | What your endpoint gets |
-| --- | --- |
-| `Depends(get_current_user)` | Verified identity. Email confirmation is not required. |
-| `Depends(get_verified_user)` | The same identity, plus an email-confirmation check. This is the policy used by `/me`. |
-| `Depends(get_user_service)` | Existing profile service backed by Firestore. Does not authenticate the request by itself. |
+| Use                          | What your endpoint gets                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `Depends(get_current_user)`  | Verified identity. Email confirmation is not required.                                     |
+| `Depends(get_verified_user)` | The same identity, plus an email-confirmation check. This is the policy used by `/me`.     |
+| `Depends(get_user_service)`  | Existing profile service backed by Firestore. Does not authenticate the request by itself. |
 
 Use a dependency on **each protected route**. Adding a route to the application
 does not automatically protect it. Do not repeat `verify_id_token()` in routes.
@@ -424,4 +425,3 @@ To check integration locally:
 4. Confirm Firestore contains `users/{response.uid}`. Repeat the request and
    confirm the existing profile is preserved.
 5. Request `/api/auth/me` without authorization and expect `401`.
-
