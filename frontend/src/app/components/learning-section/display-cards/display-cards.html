@@ -1,53 +1,94 @@
-@if (loading()) {
-  <p>Wczytywanie fiszek...</p>
-} @else {
-  <div class="display-card">
-    @if (loadError()) {
-      <p>Nie udało się pobrać fiszek.</p>
-    } @else if (finished()) {
-      <p>To już wszystkie fiszki.</p>
-    } @else if (currentCard(); as card) {
-      <div class="display-card-header">
-        <h2>Pytanie #{{ usedIds().length + 1 }}</h2>
-      </div>
-
-      <div class="display-card-content">
-        <p class="question-text">{{ card.question }}</p>
-        <div class="answer-window">
-          <textarea
-            placeholder="Wpisz swoją odpowiedź tutaj..."
-            [value]="answer()"
-            (input)="updateAnswer($any($event.target).value)"
-          ></textarea>
+<div class="display-card-background">
+  @if (coinAnimation()) {
+    <div class="coin-animation">
+      @for (coin of coinParticles(); track $index) {
+        <!-- Modyfikacja opóźnienia animacji dla każdej monety -->
+        <div
+          class="flying-coin"
+          [style.left.px]="coinStartX()"
+          [style.top.px]="coinStartY()"
+          [style.animation-delay.ms]="$index * 120"
+        >
+          🪙
         </div>
-      </div>
-    }
-
-    <div class="button-wrapper">
-      <button class="return-button" type="button" (click)="returnToMenu()">Powrót do menu</button>
-
-      @if (loadError()) {
-        <button class="submit-button" type="button" (click)="loadFlashcards()">
-          Spróbuj ponownie
-        </button>
-      } @else if (!finished() && currentCard()) {
-        <button
-          class="previous-button"
-          type="button"
-          [disabled]="!usedIds().length"
-          (click)="previousFlashcard()"
-        >
-          Poprzednie pytanie
-        </button>
-        <button
-          class="submit-button"
-          type="button"
-          [disabled]="!answer().trim()"
-          (click)="submitAnswer()"
-        >
-          Prześlij odpowiedź
-        </button>
       }
     </div>
+  }
+  <div class="display-card-container">
+    <div class="display-card-inner" [class.flipped]="isFlipped()">
+      <!-- Przednia strona -->
+      <div class="display-card display-card-front">
+        @if (currentCard(); as card) {
+          <div class="display-card-header">
+            <h2>Pytanie #{{ usedIds().length + 1 }}</h2>
+          </div>
+
+          <div class="display-card-content">
+            <p class="question-text">{{ card.question }}</p>
+          </div>
+
+          <div class="display-card-answer">
+            <textarea
+              placeholder="Wpisz swoją odpowiedź tutaj..."
+              [value]="answer()"
+              (input)="updateAnswer($any($event.target).value)"
+            ></textarea>
+          </div>
+        } @else {
+          <p>Wczytywanie fiszki...</p>
+        }
+      </div>
+
+      <!-- Tylna strona -->
+      <div class="display-card display-card-back">
+        @if (loading()) {
+          <p>Wczytywanie następnej fiszki...</p>
+        } @else if (loadError()) {
+          <p>Nie udało się pobrać fiszki.</p>
+        } @else if (finished()) {
+          <p>To już wszystkie fiszki.</p>
+        } @else if (isFlipped()) {
+          <div class="display-card-header">
+            <h2>Ilość żetonów zdobyta za odpowiedź</h2>
+          </div>
+
+          <div class="display-card-content">
+            <p class="question-text">Jakaś odpowiedź wygenerowana przez LLM</p>
+          </div>
+
+          <div class="display-card-answer">
+            <p class="answer-text">Ocena odpowiedzi przez LLM</p>
+          </div>
+        }
+      </div>
+    </div>
   </div>
-}
+
+  <div class="button-wrapper">
+    <button class="return-button" type="button" (click)="returnToMenu()">Powrót do menu</button>
+
+    @if (loadError()) {
+      <button class="submit-button" type="button" (click)="loadFlashcards()">
+        Spróbuj ponownie
+      </button>
+    } @else if (!finished() && currentCard()) {
+      <button
+        class="previous-button"
+        type="button"
+        [disabled]="!usedIds().length || isFlipped() || loading()"
+        (click)="previousFlashcard()"
+      >
+        Poprzednie pytanie
+      </button>
+
+      <button
+        class="submit-button"
+        type="button"
+        [disabled]="(!isFlipped() && !answer().trim()) || loading()"
+        (click)="isFlipped() ? nextFlashcard($event) : submitAnswer()"
+      >
+        {{ isFlipped() ? 'Następne pytanie' : 'Prześlij odpowiedź' }}
+      </button>
+    }
+  </div>
+</div>
