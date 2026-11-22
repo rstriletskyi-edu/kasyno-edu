@@ -8,7 +8,11 @@ from google.cloud.firestore import Client, SERVER_TIMESTAMP
 from pydantic import ValidationError
 
 from src.models.auth import AuthenticatedUser, CurrentUserResponse, UserProfile
-from src.utils.exceptions import AuthenticationError, ProfileUnavailableError
+from src.utils.exceptions import (
+    AuthenticationError,
+    ProfileAlreadyExistsError,
+    ProfileUnavailableError,
+)
 
 
 class UserService:
@@ -116,22 +120,37 @@ class UserService:
             }
         )
 
-    def get_current_user(self, user: AuthenticatedUser) -> CurrentUserResponse:
+    def _validate_profile_uid(self, uid: str) -> None:
         # Firebase custom UIDs can contain slashes, but a document ID cannot.
         # Never let a UID select a nested Firestore path.
-        if "/" in user.uid or user.uid in {".", ".."}:
+        if "/" in uid or uid in {".", ".."}:
             raise AuthenticationError()
+
+    def get_current_user(self, user: AuthenticatedUser) -> CurrentUserResponse:
+        """Read-only: never creates or modifies users/{uid}."""
+        self._validate_profile_uid(user.uid)
+
+        try:
+            snapshot = self._db.collection("users").document(user.uid).get()
+            if not snapshot.exists:
+                raise ProfileUnavailableError()
+            profile = UserProfile.model_validate(snapshot.to_dict())
+        except (GoogleAPICallError, RetryError, GoogleAuthError, ValidationError):
+            raise ProfileUnavailableError() from None
+
+        return CurrentUserResponse(**user.model_dump(), profile=profile)
+
+    def register_user(self, user: AuthenticatedUser) -> CurrentUserResponse:
+        """Create users/{uid} only if it does not exist; an existing profile is never changed."""
+        self._validate_profile_uid(user.uid)
 
         try:
             reference = self._db.collection("users").document(user.uid)
+            try:
+                reference.create({"created_at": SERVER_TIMESTAMP, "credits": 0})
+            except AlreadyExists:
+                raise ProfileAlreadyExistsError() from None
             snapshot = reference.get()
-            if not snapshot.exists:
-                try:
-                    reference.create({"created_at": SERVER_TIMESTAMP, "credits": 0})
-                except AlreadyExists:
-                    # Another request provisioned this UID after our initial read.
-                    pass
-                snapshot = reference.get()
             if not snapshot.exists:
                 raise ProfileUnavailableError()
             profile = UserProfile.model_validate(snapshot.to_dict())

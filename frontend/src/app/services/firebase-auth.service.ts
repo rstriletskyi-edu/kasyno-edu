@@ -6,6 +6,7 @@ import {
   GoogleAuthProvider,
   User,
   createUserWithEmailAndPassword,
+  deleteUser,
   getAuth,
   onAuthStateChanged,
   reload,
@@ -44,8 +45,12 @@ export class FirebaseAuthService {
 
   async signUp(email: string, password: string): Promise<User> {
     const result = await createUserWithEmailAndPassword(this.auth, email, password);
-    await sendEmailVerification(result.user);
     return result.user;
+  }
+
+  /** Rolls back a just-created account (used when backend registration fails). */
+  deleteAccount(user: User): Promise<void> {
+    return deleteUser(user);
   }
 
   sendVerificationEmail(user: User): Promise<void> {

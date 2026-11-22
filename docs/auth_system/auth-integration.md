@@ -44,7 +44,7 @@ The Angular route guard controls navigation; the backend independently checks AP
 
 | Method | Current flow |
 | --- | --- |
-| Email/password registration | `createUserWithEmailAndPassword()` creates the Auth account, then `sendEmailVerification()` sends the confirmation email. Angular opens `/auth/account-activation`. |
+| Email/password registration | `createUserWithEmailAndPassword()` creates the Auth account, then Angular calls `POST /api/auth/register`, which creates `users/{uid}`. Only if that succeeds is `sendEmailVerification()` sent and `/auth/account-activation` opened. If registration fails, the new Firebase account is deleted so both sides stay consistent. |
 | Email/password login | `signInWithEmailAndPassword()` signs in. Verified users go to `/dashboard`; others go to account activation. |
 | Google | `signInWithPopup()` with `GoogleAuthProvider`. The same operation is used by the register and login buttons. |
 | Facebook | `signInWithPopup()` with `FacebookAuthProvider`. The same operation is used by the register and login buttons. |
@@ -64,9 +64,11 @@ refresh; the application does not manually store tokens. The navbar's logout
 calls Firebase `signOut()` and redirects to login. This does not revoke a token
 already copied into another tool.
 
-**Profile timing:** the dashboard calls `/api/auth/me`. That endpoint creates a
-missing profile after token and email checks. Registration alone does not create
-a Firestore document.
+**Profile timing:** the profile `users/{uid}` (`created_at`, `credits: 0`) is created
+by `POST /api/auth/register`, called right after Firebase registration (and after
+every Google/Facebook sign-in). It returns `201` when the profile is created and
+`409` when it already exists (an existing profile is never overwritten); the frontend
+treats `409` as success. It requires a valid token but not a verified email. `GET /api/auth/me` only reads; a missing profile returns `503`.
 
 ## 3. Request headers and Angular integration
 
@@ -122,9 +124,8 @@ Those operations use Firebase directly.
 4. `AuthenticatedUser` validates the selected claims. The verified `uid` identifies
    the caller; the backend never accepts a caller-supplied UID as proof of identity.
 5. `/me` uses `get_verified_user`, which requires `email_verified=True`.
-6. `UserService` reads `users/{uid}`. If absent, it atomically creates a document
-   containing a server-generated `created_at` timestamp. Concurrent creation is
-   handled without replacing an existing document.
+6. `UserService.get_current_user` only reads `users/{uid}`. If the document is
+   absent it raises `ProfileUnavailableError` (503); it never creates or modifies it.
 
 Firebase Admin access bypasses Firestore Security Rules, so UID ownership is
 enforced by backend code. Direct browser access to private profiles should be denied.
@@ -369,8 +370,7 @@ For an existing profile, follow the actual route in
 `get_verified_user` and `get_user_service`, then call
 `service.get_current_user(user)`. It returns a `CurrentUserResponse` Python
 object, which FastAPI serializes into the `/me` JSON shown in section 5.
-This call can also provision a missing profile; it does not return arbitrary
-Firestore fields.
+This call is read-only; it does not return arbitrary Firestore fields.
 
 For a new feature such as learning progress:
 

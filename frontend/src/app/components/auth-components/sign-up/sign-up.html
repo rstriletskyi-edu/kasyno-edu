@@ -2,7 +2,19 @@
 <form (ngSubmit)="submit()" #signUpForm="ngForm">
   <label>
     E-mail
-    <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+    <input
+      type="email"
+      name="email"
+      [(ngModel)]="email"
+      #emailField="ngModel"
+      autocomplete="email"
+      email
+      emailTld
+      required
+    />
+    @if (emailField.errors?.['email'] || emailField.errors?.['emailTld']) {
+      <span class="message error" role="alert">Podaj prawidłowy adres e-mail.</span>
+    }
   </label>
   <label>
     Hasło
@@ -26,11 +38,15 @@
       required
     />
   </label>
-  @if (errorMessage) {
-    <p class="message error" role="alert">{{ errorMessage }}</p>
+  @if (errorMessage()) {
+    <p class="message error" role="alert">{{ errorMessage() }}</p>
   }
-  <button type="submit" [disabled]="signUpForm.invalid || isSubmitting">
-    {{ isSubmitting ? 'Tworzenie konta…' : 'Utwórz konto' }}
+  <button
+    type="submit"
+    [disabled]="signUpForm.invalid || isSubmitting()"
+    [attr.aria-busy]="isSubmitting()"
+  >
+    {{ isSubmitting() ? 'Tworzenie konta…' : 'Utwórz konto' }}
   </button>
 </form>
 
@@ -41,7 +57,7 @@
     type="button"
     class="social-btn google-btn"
     (click)="signUpWithGoogle()"
-    [disabled]="isSubmitting"
+    [disabled]="isSubmitting()"
   >
     <svg class="social-icon" viewBox="0 0 24 24" width="18" height="18">
       <path
@@ -67,7 +83,7 @@
     type="button"
     class="social-btn facebook-btn"
     (click)="signUpWithFacebook()"
-    [disabled]="isSubmitting"
+    [disabled]="isSubmitting()"
   >
     <svg class="social-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
       <path

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -14,22 +14,22 @@ export class PasswordChange {
   private readonly auth = inject(FirebaseAuthService);
 
   email = '';
-  errorMessage = '';
-  successMessage = '';
-  isSubmitting = false;
+  readonly errorMessage = signal('');
+  readonly successMessage = signal('');
+  readonly isSubmitting = signal(false);
 
   async submit(): Promise<void> {
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.isSubmitting = true;
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.isSubmitting.set(true);
 
     try {
       await this.auth.sendPasswordReset(this.email);
-      this.successMessage = 'Jeśli konto istnieje, otrzymasz e-mail z linkiem do zmiany hasła.';
+      this.successMessage.set('Jeśli konto istnieje, otrzymasz e-mail z linkiem do zmiany hasła.');
     } catch (error) {
-      this.errorMessage = firebaseErrorMessage(error);
+      this.errorMessage.set(firebaseErrorMessage(error));
     } finally {
-      this.isSubmitting = false;
+      this.isSubmitting.set(false);
     }
   }
 }
