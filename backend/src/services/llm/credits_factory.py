@@ -12,11 +12,11 @@ def linear_credits(score: int) -> int:
 
 
 _ENGINES: dict[str, CreditsCalculator] = {
-    "linear": linear_credits,
+    "proportional": lambda score: max(0, min(100, score)) * 10 // 100,
 }
 
 
-def build_credits_calculator(engine: str = "linear") -> CreditsCalculator:
+def build_credits_calculator(engine: str = "proportional") -> CreditsCalculator:
     """Return the credits engine selected by name.
 
     Register another callable in ``_ENGINES`` and set ``CREDITS_ENGINE`` to switch.
