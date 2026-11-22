@@ -43,9 +43,9 @@ describe('AccountActivation', () => {
   });
 
   it('loads the email and waits while unverified', () => {
-    expect(component.email).toBe(user.email);
+    expect(component.email()).toBe(user.email);
     expect(navigate).not.toHaveBeenCalled();
-    expect(component.errorMessage).toBe('');
+    expect(component.errorMessage()).toBe('');
   });
 
   it('signs out and redirects to login after verification', async () => {
@@ -71,16 +71,33 @@ describe('AccountActivation', () => {
     expect(auth.refreshUser).toHaveBeenCalledTimes(calls);
   });
 
+  it('does not disable the buttons during background polling', async () => {
+    let release!: () => void;
+    auth.refreshUser.mockImplementationOnce(
+      () => new Promise((resolve) => (release = () => resolve(user))),
+    );
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(component.isSubmitting()).toBe(false);
+    release();
+  });
+
+  it('allows resending the verification email again after it was sent', async () => {
+    await component.resendEmail();
+    expect(component.isSubmitting()).toBe(false);
+    await component.resendEmail();
+    expect(auth.sendVerificationEmail).toHaveBeenCalledTimes(2);
+  });
+
   it('shows a pending message for an explicit check', async () => {
     await component.checkVerification();
-    expect(component.errorMessage).toContain('nie jest jeszcze potwierdzony');
+    expect(component.errorMessage()).toContain('nie jest jeszcze potwierdzony');
     expect(auth.signOut).not.toHaveBeenCalled();
   });
 
   it('does not redirect after refresh fails', async () => {
     auth.refreshUser.mockRejectedValueOnce(new Error('Network unavailable'));
     await component.checkVerification();
-    expect(component.errorMessage).toBe('Network unavailable');
+    expect(component.errorMessage()).toBe('Network unavailable');
     expect(navigate).not.toHaveBeenCalled();
   });
 });

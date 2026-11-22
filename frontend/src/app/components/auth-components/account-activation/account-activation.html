@@ -1,18 +1,28 @@
 <h1>Potwierdź adres e-mail</h1>
 <p>
-  Wysłaliśmy link weryfikacyjny na adres <strong>{{ email || 'podany przy rejestracji' }}</strong
+  Wysłaliśmy link weryfikacyjny na adres <strong>{{ email() || 'podany przy rejestracji' }}</strong
   >. Kliknij go i wróć do tej karty. Po potwierdzeniu przeniesiemy Cię do logowania.
 </p>
-@if (errorMessage) {
-  <p class="message error" role="alert">{{ errorMessage }}</p>
+@if (errorMessage()) {
+  <p class="message error" role="alert">{{ errorMessage() }}</p>
 }
-@if (successMessage) {
-  <p class="message success" role="status">{{ successMessage }}</p>
+@if (successMessage()) {
+  <p class="message success" role="status">{{ successMessage() }}</p>
 }
-<button type="button" [disabled]="isSubmitting" (click)="checkVerification()">
+<button
+  type="button"
+  [disabled]="isSubmitting()"
+  [attr.aria-busy]="isSubmitting()"
+  (click)="checkVerification()"
+>
   Sprawdź status
 </button>
-<button type="button" [disabled]="isSubmitting" (click)="resendEmail()">
+<button
+  type="button"
+  [disabled]="isSubmitting()"
+  [attr.aria-busy]="isSubmitting()"
+  (click)="resendEmail()"
+>
   Wyślij link ponownie
 </button>
 <p><a routerLink="/auth/login">Wróć do logowania</a></p>

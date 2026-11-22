@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { FirebaseAuthService, firebaseErrorMessage } from '../../../services/firebase-auth.service';
@@ -13,10 +13,12 @@ export class AccountActivation implements OnInit, OnDestroy {
   private readonly auth = inject(FirebaseAuthService);
   private readonly router = inject(Router);
 
-  email = '';
-  errorMessage = '';
-  successMessage = '';
-  isSubmitting = false;
+  readonly email = signal('');
+  readonly errorMessage = signal('');
+  readonly successMessage = signal('');
+  // True only while a user-triggered action runs; background polling must not disable the buttons.
+  readonly isSubmitting = signal(false);
+  private checking = false;
   private timer?: ReturnType<typeof setInterval>;
   private destroyed = false;
 
@@ -39,9 +41,10 @@ export class AccountActivation implements OnInit, OnDestroy {
   }
 
   async resendEmail(): Promise<void> {
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.isSubmitting = true;
+    if (this.isSubmitting()) return;
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.isSubmitting.set(true);
 
     try {
       const user = await this.auth.getCurrentUser();
@@ -50,18 +53,22 @@ export class AccountActivation implements OnInit, OnDestroy {
         return;
       }
       await this.auth.sendVerificationEmail(user);
-      this.successMessage = 'Wysłaliśmy ponownie link weryfikacyjny.';
+      this.successMessage.set('Wysłaliśmy ponownie link weryfikacyjny.');
     } catch (error) {
-      this.errorMessage = firebaseErrorMessage(error);
+      this.errorMessage.set(firebaseErrorMessage(error));
     } finally {
-      this.isSubmitting = false;
+      this.isSubmitting.set(false);
     }
   }
 
+  /** `showPendingMessage` is true for the user's explicit click and false for background polling. */
   async checkVerification(showPendingMessage = true): Promise<void> {
-    if (this.isSubmitting || this.destroyed) return;
-    this.errorMessage = '';
-    this.isSubmitting = true;
+    if (this.checking || this.destroyed) return;
+    this.checking = true;
+    if (showPendingMessage) {
+      this.errorMessage.set('');
+      this.isSubmitting.set(true);
+    }
 
     try {
       const user = await this.auth.getCurrentUser();
@@ -77,20 +84,21 @@ export class AccountActivation implements OnInit, OnDestroy {
         await this.auth.signOut();
         await this.router.navigate(['/auth/login'], { queryParams: { verified: '1' } });
       } else if (showPendingMessage) {
-        this.errorMessage = 'Adres e-mail nie jest jeszcze potwierdzony.';
+        this.errorMessage.set('Adres e-mail nie jest jeszcze potwierdzony.');
       }
     } catch (error) {
-      if (!this.destroyed) this.errorMessage = firebaseErrorMessage(error);
+      if (!this.destroyed) this.errorMessage.set(firebaseErrorMessage(error));
     } finally {
-      this.isSubmitting = false;
+      this.checking = false;
+      if (showPendingMessage) this.isSubmitting.set(false);
     }
   }
 
   private async loadEmail(): Promise<void> {
     try {
-      this.email = (await this.auth.getCurrentUser())?.email ?? '';
+      this.email.set((await this.auth.getCurrentUser())?.email ?? '');
     } catch (error) {
-      this.errorMessage = firebaseErrorMessage(error);
+      this.errorMessage.set(firebaseErrorMessage(error));
     }
   }
 }

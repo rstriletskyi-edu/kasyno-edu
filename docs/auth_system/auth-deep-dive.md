@@ -243,8 +243,8 @@ return service.get_current_user(user)
 ```
 
 The profile service already knows the caller is `user-abc123` from `user.uid`.
-It reads `users/user-abc123`, creates the document with a server timestamp if
-absent, and preserves existing data. It returns a `CurrentUserResponse` object.
+It only reads `users/user-abc123` (created earlier by `POST /api/auth/register`) and
+returns `503` if it is missing. It returns a `CurrentUserResponse` object.
 FastAPI converts it to this HTTP `200` JSON response:
 
 ```json
@@ -318,7 +318,7 @@ separate requests. Profile/database loading remains the feature's responsibility
 | Browser login session and refresh token | Firebase browser SDK | Does not implement its own token-storage/session table. |
 | ID token | Firebase SDK supplies it to Angular | Verifies the token presented on each protected request. Does not save it in Firestore. |
 | `AuthenticatedUser` | Request handling in FastAPI | Passes this Python object to the route for the current request. |
-| Profile | Firestore | Reads/creates it when `/me` runs. |
+| Profile | Firestore | Created by `POST /auth/register`; `/me` only reads it. |
 
 ID tokens last about one hour. The SDK manages obtaining replacement tokens;
 asking for a token does not necessarily mean a fresh login or network request.
@@ -338,7 +338,7 @@ token in another client is not revoked by this local logout alone.
 | `get_current_user()` | FastAPI dependencies | Token-verified `AuthenticatedUser`, with no database lookup. |
 | `get_verified_user()` | FastAPI dependencies | The same identity after requiring verified email. |
 | `get_user_service()` | FastAPI dependencies | A profile-service instance, not a user. |
-| `UserService.get_current_user(user)` | Backend profile service | `CurrentUserResponse`, after Firestore profile lookup/provisioning. |
+| `UserService.get_current_user(user)` | Backend profile service | `CurrentUserResponse`, after a read-only Firestore profile lookup. |
 
 Source files: [Angular auth](../../frontend/src/app/services/firebase-auth.service.ts),
 [interceptor](../../frontend/src/app/interceptors/auth.interceptor.ts),

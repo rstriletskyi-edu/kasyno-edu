@@ -247,25 +247,105 @@ def test_me_reads_only_token_uid_and_does_not_overwrite_existing_profile(
     reference.return_value.set.assert_not_called()
 
 
-@pytest.mark.parametrize("concurrent", [False, True])
-def test_me_initializes_missing_profile_without_overwriting_concurrent_creation(
-    client: TestClient, profile_db: Mock, concurrent: bool
+def test_me_without_profile_returns_503_and_never_creates(
+    client: TestClient, profile_db: Mock
 ) -> None:
-    from google.cloud.firestore import SERVER_TIMESTAMP
-
     reference = profile_db.collection.return_value.document.return_value
-    existing = reference.get.return_value
-    reference.get.side_effect = [Mock(exists=False), existing]
-    if concurrent:
-        reference.create.side_effect = AlreadyExists("Concurrent profile creation")
+    reference.get.return_value = Mock(exists=False)
 
     response = client.get("/api/auth/me", headers={"Authorization": "Bearer test-token"})
 
-    assert response.status_code == 200
-    reference.create.assert_called_once_with(
-        {"created_at": SERVER_TIMESTAMP, "credits": 0}
-    )
+    assert response.status_code == 503
+    assert response.json() == {"detail": "User profile service unavailable"}
+    reference.create.assert_not_called()
     reference.set.assert_not_called()
+    reference.update.assert_not_called()
+
+
+@pytest.mark.parametrize("authorization", [None, "", "Basic abc", "Bearer", "Bearer "])
+def test_register_requires_bearer_token(
+    client: TestClient, verify_token: Mock, authorization: str | None
+) -> None:
+    headers = {"Authorization": authorization} if authorization is not None else {}
+    response = client.post("/api/auth/register", headers=headers)
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+    verify_token.assert_not_called()
+
+
+def test_register_creates_missing_profile(client: TestClient, profile_db: Mock) -> None:
+    reference = profile_db.collection.return_value.document.return_value
+
+    response = client.post("/api/auth/register", headers={"Authorization": "Bearer test-token"})
+
+    assert response.status_code == 201
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json()["uid"] == "firebase-user-123"
+    reference.create.assert_called_once_with({"created_at": SERVER_TIMESTAMP, "credits": 0})
+    reference.set.assert_not_called()
+    profile_db.collection.assert_called_once_with("users")
+    profile_db.collection.return_value.document.assert_called_once_with("firebase-user-123")
+
+
+def test_register_existing_profile_is_not_overwritten(
+    client: TestClient, profile_db: Mock
+) -> None:
+    reference = profile_db.collection.return_value.document.return_value
+    reference.create.side_effect = AlreadyExists("Profile already exists")
+
+    response = client.post("/api/auth/register", headers={"Authorization": "Bearer test-token"})
+
+    assert response.status_code == 200
+    assert response.json()["profile"]["credits"] == 0
+    reference.create.assert_called_once_with({"created_at": SERVER_TIMESTAMP, "credits": 0})
+    reference.set.assert_not_called()
+    reference.update.assert_not_called()
+
+
+def test_register_uses_uid_from_token_not_from_request(
+    client: TestClient, profile_db: Mock, verify_token: Mock
+) -> None:
+    verify_token.return_value["uid"] = "second-user"
+    response = client.post(
+        "/api/auth/register?uid=someone-else",
+        json={"uid": "someone-else"},
+        headers={"Authorization": "Bearer second-token"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["uid"] == "second-user"
+    profile_db.collection.return_value.document.assert_called_once_with("second-user")
+
+
+def test_register_accepts_unverified_email(
+    client: TestClient, profile_db: Mock, verify_token: Mock
+) -> None:
+    verify_token.return_value["email_verified"] = False
+    response = client.post("/api/auth/register", headers={"Authorization": "Bearer test-token"})
+
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize("uid", ["x/private/y", ".", ".."])
+def test_register_rejects_unsafe_document_uid(
+    client: TestClient, profile_db: Mock, verify_token: Mock, uid: str
+) -> None:
+    verify_token.return_value["uid"] = uid
+    response = client.post("/api/auth/register", headers={"Authorization": "Bearer test-token"})
+
+    assert response.status_code == 401
+    profile_db.collection.assert_not_called()
+
+
+def test_register_firestore_failure_is_generic(client: TestClient, profile_db: Mock) -> None:
+    profile_db.collection.return_value.document.return_value.create.side_effect = (
+        FirestorePermissionDenied("private project configuration")
+    )
+    response = client.post("/api/auth/register", headers={"Authorization": "Bearer test-token"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "User profile service unavailable"}
 
 
 def test_me_uses_new_users_own_document(
