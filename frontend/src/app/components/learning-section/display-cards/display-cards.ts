@@ -14,9 +14,11 @@ import {
   templateUrl: './display-cards.html',
 })
 export class DisplayCards {
-  private readonly flashcardsService = inject(FlashcardsService);
+  readonly isFlipped = signal(false);
 
+  private readonly flashcardsService = inject(FlashcardsService);
   protected evalService = inject(LlmEvalService);
+
   readonly sessionId = input<string | null>(null);
 
   returnToMenuEvent = output<void>();
@@ -26,6 +28,11 @@ export class DisplayCards {
   readonly loadError = signal(false);
   readonly finished = signal(false);
   readonly answer = signal('');
+
+  readonly coinStartX = signal(0);
+  readonly coinStartY = signal(0);
+  readonly coinAnimation = signal(false);
+  readonly coinParticles = signal<number[]>([]);
 
   constructor() {
     this.loadFlashcards();
@@ -39,6 +46,7 @@ export class DisplayCards {
       next: (flashcard) => {
         this.currentCard.set(flashcard);
         this.answer.set('');
+        this.isFlipped.set(false);
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {
@@ -67,6 +75,8 @@ export class DisplayCards {
 
     this.loading.set(true);
     this.loadError.set(false);
+    this.isFlipped.set(true);
+
 
     this.flashcardsService.getConcreteFlashcard(lastId).subscribe({
       next: (flashcard) => {
@@ -74,6 +84,7 @@ export class DisplayCards {
         this.answer.set('');
         this.usedIds.update((ids) => ids.slice(0, -1));
         this.loading.set(false);
+        this.isFlipped.set(false);
       },
       error: (err: HttpErrorResponse) => {
         this.loadError.set(true);
@@ -84,6 +95,11 @@ export class DisplayCards {
 
   submitAnswer() {
     //tak samo jak w innych funkcjach obsłuż flagę błędu i ładowania
+    if (this.isFlipped() || !this.answer().trim()) {
+      return;
+    }
+    const flashcard = this.currentCard();
+    if (!flashcard) return;
 
     this.evalService
       .getAnswerEvaluation(
@@ -102,12 +118,52 @@ export class DisplayCards {
         },
       });
 
-    if (!this.answer().trim()) return;
+    this.usedIds.update((ids) => [...ids, flashcard.id]);
+    this.isFlipped.set(true);
+  }
 
+  resetCard() {
+    if (!this.isFlipped() || this.loading()) {
+      return;
+    }
     const flashcard = this.currentCard();
     if (!flashcard) return;
-
-    this.usedIds.update((ids) => [...ids, flashcard.id]);
     this.loadFlashcards();
   }
+  
+  //Funkcja odtwarzająca animację monet, obecnie wywoływana przez testCoinAnimation z góry ustaloną liczbą monet.
+  playCoinAnimation(tokens: number) {
+    if (tokens <= 0 || this.coinAnimation()) return;
+
+    const particles = Math.min(tokens, 10);
+
+    this.coinParticles.set(
+      Array.from({ length: particles }, (_, i) => i)
+    );
+
+    this.coinAnimation.set(true);
+
+    setTimeout(() => {
+      this.coinAnimation.set(false);
+      this.coinParticles.set([]);
+    }, 1600);
+  }
+
+  //Funkcja do sprawdzenia dzialania animacji, do usunięcia po implementacji oceny odpowiedzi przez llm
+  testCoinAnimation() {
+    this.playCoinAnimation(5);
+  }
+
+  //Funkcja wywołująca animację monet i resetująca kartę, do potencjalnej modyfikacji w przyszlosci.
+  nextFlashcard(event: MouseEvent) {
+  const button = event.currentTarget as HTMLElement;
+  const rect = button.getBoundingClientRect();
+
+  this.coinStartX.set(rect.left + rect.width / 2);
+  this.coinStartY.set(rect.top - rect.height*2);
+
+  this.testCoinAnimation();
+  this.resetCard();
+}
+  
 }

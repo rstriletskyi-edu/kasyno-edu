@@ -57,12 +57,4 @@ export class LearningSection {
     this.displayCardVisible.set(false);
     this.sessionId.set(null);
   }
-
-  goToDisplayCards() {
-    this.displayCardVisible.set(true);
-  }
-
-  goBackToMenu() {
-    this.displayCardVisible.set(false);
-  }
 }
