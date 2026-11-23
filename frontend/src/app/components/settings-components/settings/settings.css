@@ -38,3 +38,23 @@
   color: #cbd5e1;
   text-align: center;
 }
+
+.return-flashcards-button {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: none;
+  width: 80%;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: 'Inter', sans-serif;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
+}
+
+.return-flashcards-button:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+}

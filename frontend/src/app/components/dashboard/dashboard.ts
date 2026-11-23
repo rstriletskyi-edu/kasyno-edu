@@ -1,10 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
 import { CurrentUser, CurrentUserService } from '../../services/current-user.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { LearningSection } from '../learning-section/learning-section';
 
 @Component({
   imports: [],
@@ -16,6 +18,7 @@ export class Dashboard implements OnInit {
   private readonly users = inject(CurrentUserService);
   private readonly auth = inject(FirebaseAuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   readonly user = signal<CurrentUser | null>(null);
   readonly error = signal('');
@@ -25,6 +28,11 @@ export class Dashboard implements OnInit {
 
   ngOnInit(): void {
     this.loadProfile();
+  }
+
+  returnToFlashcards(): void {
+    LearningSection.enableSilentSessionRecovery();
+    void this.router.navigate(['/home']);
   }
 
   loadProfile(): void {

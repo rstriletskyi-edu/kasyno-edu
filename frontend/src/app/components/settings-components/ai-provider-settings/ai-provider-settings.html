@@ -24,6 +24,12 @@
         <span>Edytuj</span>
       </button>
     </div>
+
+    @if (authError()) {
+      <div class="session-error-banner" role="alert">
+        <p>{{ authErrorMessage() }}</p>
+      </div>
+    }
   } @else {
     <div class="card-header">
       <h2>Konfiguracja modelu AI</h2>

@@ -3,6 +3,8 @@ import { NavBar } from './nav-bar';
 import { Router, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { FLASHCARD_STATE_STORAGE_KEY } from '../learning-section/display-cards/display-cards';
+import { RESET_LEARNING_SESSION_EVENT } from '../learning-section/learning-section';
 
 describe('NavBar', () => {
   let component: NavBar;
@@ -63,5 +65,25 @@ describe('NavBar', () => {
     await component.logout();
     expect(navigate).toHaveBeenCalledOnce();
     expect(component.logoutError()).toBe('');
+  });
+
+  it('clears saved flashcard state from sessionStorage and dispatches reset-learning-session event when clicking nav-logo', () => {
+    vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    sessionStorage.setItem(
+      FLASHCARD_STATE_STORAGE_KEY,
+      JSON.stringify({ sessionId: 'session-123' }),
+    );
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+    const homeLogoLink = fixture.nativeElement.querySelector(
+      'a.nav-logo[routerLink="/home"]',
+    ) as HTMLElement;
+    expect(homeLogoLink).toBeTruthy();
+    homeLogoLink.click();
+
+    expect(sessionStorage.getItem(FLASHCARD_STATE_STORAGE_KEY)).toBeNull();
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: RESET_LEARNING_SESSION_EVENT }),
+    );
   });
 });
