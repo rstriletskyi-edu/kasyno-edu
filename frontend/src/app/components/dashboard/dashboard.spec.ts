@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { Dashboard } from './dashboard';
 import { CurrentUserService } from '../../services/current-user.service';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
+import { FLASHCARD_STATE_STORAGE_KEY } from '../learning-section/display-cards/display-cards';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -28,6 +30,7 @@ describe('Dashboard', () => {
     await TestBed.configureTestingModule({
       imports: [Dashboard],
       providers: [
+        provideRouter([]),
         { provide: CurrentUserService, useValue: { getMe } },
         { provide: FirebaseAuthService, useValue: { getIdToken } },
       ],
@@ -83,5 +86,23 @@ describe('Dashboard', () => {
     await productionFixture.componentInstance.copyToken();
     expect(productionFixture.nativeElement.textContent).not.toContain('Kopiuj ID token');
     expect(getIdToken).not.toHaveBeenCalled();
+  });
+
+  it('navigates to /home and preserves saved flashcard state when clicking Powrót do fiszek', () => {
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    sessionStorage.setItem(
+      FLASHCARD_STATE_STORAGE_KEY,
+      JSON.stringify({ sessionId: 'session-123', currentCardId: 'card-1' }),
+    );
+    fixture.detectChanges();
+
+    const btn = fixture.nativeElement.querySelector(
+      '.return-flashcards-button',
+    ) as HTMLButtonElement;
+    btn.click();
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/home']);
+    expect(sessionStorage.getItem(FLASHCARD_STATE_STORAGE_KEY)).not.toBeNull();
+    sessionStorage.clear();
   });
 });

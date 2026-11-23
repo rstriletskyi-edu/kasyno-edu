@@ -11,7 +11,6 @@ export const routes: Routes = [
     title: baseTitle,
     component: Homepage,
     pathMatch: 'full',
-    //canActivate: [authGuard] //blokada przed nieautoryzowanym dostępem
   },
   {
     path: 'dashboard',
@@ -26,7 +25,6 @@ export const routes: Routes = [
     pathMatch: 'full',
     loadComponent: () =>
       import('./components/settings-components/settings/settings').then((c) => c.Settings),
-    canActivate: [authGuard],
   },
   {
     path: 'auth',

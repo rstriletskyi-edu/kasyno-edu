@@ -1,23 +1,22 @@
 <nav class="casino-navbar">
-  <div class="nav-logo">
+  <a routerLink="/home" class="nav-logo" (click)="resetLearningSession()">
     <span class="logo-icon">🎰</span>
-    <span class="logo-text">Kasyno-edu</span>
-  </div>
+    <span class="logo-text">Kasyno Edu</span>
+  </a>
 
-  <div class="nav-links">
-    <a routerLink="/home" class="nav-btn">🏠 Strona główna</a>
-    <a routerLink="/dashboard" class="nav-btn">👤 Konto</a>
-    <a routerLink="/settings" class="nav-btn">⚙️ Ustawienia</a>
+  <div class="nav-wallet">
+    <span class="wallet-label">Żetony:</span>
+    <span class="wallet-amount">100 🪙</span>
   </div>
 
   <div class="nav-right">
-    <div class="nav-wallet">
-      <span class="wallet-label">Żetony:</span>
-      <span class="wallet-amount">100 🪙</span>
+    <div class="nav-links">
+      <a routerLink="/dashboard" class="nav-btn">👤 Konto</a>
+      <a routerLink="/settings" class="nav-btn">⚙️ Ustawienia</a>
     </div>
     <div class="log-out">
       <button type="button" class="logout-btn" (click)="logout()" [disabled]="isLoggingOut()">
-        {{ isLoggingOut() ? 'Wylogowywanie…' : 'Wyloguj 🚪' }}
+        {{ isLoggingOut() ? 'Wylogowywanie…' : 'Wyloguj' }}
       </button>
       @if (logoutError()) {
         <p class="logout-error" role="alert">{{ logoutError() }}</p>

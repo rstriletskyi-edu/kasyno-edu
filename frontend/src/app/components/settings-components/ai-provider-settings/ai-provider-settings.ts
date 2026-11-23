@@ -1,7 +1,14 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FirebaseAuthService } from '../../../services/firebase-auth.service';
 import { LocalStorageService } from '../../../services/local-storage.service';
+import { SessionStorageService } from '../../../services/session-storage.service';
+import { FLASHCARD_STATE_STORAGE_KEY } from '../../learning-section/display-cards/display-cards';
+import {
+  LearningSection,
+  RESET_LEARNING_SESSION_EVENT,
+} from '../../learning-section/learning-section';
 
 export type LlmProviderType = '' | 'openai' | 'ollama' | 'google_genai' | 'anthropic';
 
@@ -30,10 +37,14 @@ const URL_PATTERN = /^https?:\/\/.+/i;
 })
 export class AiProviderSettings {
   protected readonly storageService = inject(LocalStorageService);
+  protected readonly sessionStorageService = inject(SessionStorageService);
+  private readonly auth = inject(FirebaseAuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly saved = signal(false);
-  protected readonly isEditing = signal(true);
+  protected readonly isEditing = signal(false);
+  protected readonly authError = signal(false);
+  protected readonly authErrorMessage = signal('');
 
   protected readonly providerOptions: ProviderOption[] = [
     {
@@ -149,14 +160,54 @@ export class AiProviderSettings {
             baseUrl: this.showBaseUrl ? raw.baseUrl.trim() : '',
           };
 
+    const previous =
+      this.storageService.getItem<Partial<LlmProviderSettings>>(LLM_PROVIDER_STORAGE_KEY);
+    const hasChanged =
+      (previous?.provider ?? '') !== payload.provider ||
+      (previous?.apiKey ?? '') !== payload.apiKey ||
+      (previous?.model ?? '') !== payload.model ||
+      (previous?.baseUrl ?? '') !== payload.baseUrl;
+
     this.storageService.setItem<LlmProviderSettings>(LLM_PROVIDER_STORAGE_KEY, payload);
+    if (hasChanged) {
+      LearningSection.clearInAppSessionFlag();
+      this.sessionStorageService.removeItem(FLASHCARD_STATE_STORAGE_KEY);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event(RESET_LEARNING_SESSION_EVENT));
+      }
+    }
     this.saved.set(true);
     this.isEditing.set(false);
   }
 
-  protected startEditing(): void {
+  protected async startEditing(): Promise<void> {
     this.saved.set(false);
-    this.isEditing.set(true);
+    this.authError.set(false);
+    this.authErrorMessage.set('');
+
+    if (!this.auth.isConfigured) {
+      this.authError.set(true);
+      this.authErrorMessage.set('Błąd autoryzacji użytkownika');
+      return;
+    }
+
+    try {
+      const user = await this.auth.getCurrentUser();
+      if (!user) {
+        this.authError.set(true);
+        this.authErrorMessage.set('Błąd autoryzacji użytkownika');
+        return;
+      }
+      if (!user.emailVerified) {
+        this.authError.set(true);
+        this.authErrorMessage.set('Wymagane potwierdzenie adresu email');
+        return;
+      }
+      this.isEditing.set(true);
+    } catch {
+      this.authError.set(true);
+      this.authErrorMessage.set('Błąd autoryzacji użytkownika');
+    }
   }
 
   private loadSavedSettings(): void {
@@ -175,11 +226,10 @@ export class AiProviderSettings {
         { emitEvent: false },
       );
       this.applyProviderRules(provider, false);
-      this.isEditing.set(false);
     } else {
       this.applyProviderRules(this.selectedProvider, false);
-      this.isEditing.set(true);
     }
+    this.isEditing.set(false);
   }
 
   private applyProviderRules(provider: LlmProviderType, isUserChange: boolean): void {
