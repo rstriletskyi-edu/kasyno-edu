@@ -1,0 +1,22 @@
+<div class="game-window">
+  @switch (selectedGame()) {
+    @case ('blackjack') {
+      @defer {
+        <blackjack />
+      }
+    }
+    @case ('roulette') {
+      @defer {
+        <roulette />
+      }
+    }
+    @case ('slots') {
+      @defer {
+        <slots />
+      }
+    }
+    @default {
+      <h3>Wybierz grę i rozpocznij rozgrywkę</h3>
+    }
+  }
+</div>

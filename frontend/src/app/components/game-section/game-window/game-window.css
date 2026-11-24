@@ -1,0 +1,8 @@
+.game-window {
+  display: flex;
+  border: 1px solid #7e22ce59;
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 0.625rem;
+  margin-top: 1.625rem;
+}
