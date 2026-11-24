@@ -1,26 +1,48 @@
-@if (!displayCardVisible()) {
-  <div class="learning-card">
-    <div class="card-header">
-      <div class="icon-wrapper">
-        <span>📚</span>
+@switch (activeView()) {
+  @case ('display-cards') {
+    <display-cards [sessionId]="sessionId()" (returnToMenuEvent)="goBackToMenu()"></display-cards>
+  }
+  @case ('leaderboard') {
+    <leaderboard (returnToMenuEvent)="goBackToMenu()"></leaderboard>
+  }
+  @case ('flashcard-browser') {
+    <flashcard-browser (returnToMenuEvent)="goBackToMenu()"></flashcard-browser>
+  }
+  @default {
+    <div class="learning-card">
+      <div class="card-header">
+        <div class="icon-wrapper">
+          <span>📚</span>
+        </div>
+        <h2>Strefa Nauki</h2>
       </div>
-      <h2>Strefa Nauki</h2>
+
+      <p class="description">
+        Zdobywaj wiedzę, rozwiązuj quizy i zgarniaj dodatkowe darmowe żetony na grę!
+      </p>
+
+      @if (error()) {
+        <div class="session-error-banner">
+          <p>{{ errorMessage() }}</p>
+        </div>
+      }
+
+      <div class="button-wrapper">
+        <button
+          class="start-button"
+          type="button"
+          [disabled]="loading()"
+          (click)="goToDisplayCards()"
+        >
+          {{ loading() ? 'Rozpoczynanie...' : 'Rozpocznij naukę' }}
+        </button>
+        <button class="leaderboard-button" type="button" (click)="goToLeaderboard()">
+          <span> Tabela liderów </span>
+        </button>
+        <button class="browse-button" type="button" (click)="goToFlashcardBrowser()">
+          <span> Przeglądaj fiszki </span>
+        </button>
+      </div>
     </div>
-
-    <p class="description">
-      Zdobywaj wiedzę, rozwiązuj quizy i zgarniaj dodatkowe darmowe żetony na grę!
-    </p>
-
-    @if (error()) {
-      <p>{{ errorMessage() }}</p>
-      <!--potrzebuje stylizowania i jakiejś oprawy wizualnej-->
-    }
-
-    <div class="button-wrapper">
-      <button class="start-button" (click)="goToDisplayCards()">Rozpocznij naukę</button>
-      <button class="leaderboard-button"><span> Tabela liderów </span></button>
-    </div>
-  </div>
-} @else {
-  <display-cards [sessionId]="sessionId()" (returnToMenuEvent)="goBackToMenu()"></display-cards>
+  }
 }

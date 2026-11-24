@@ -2,7 +2,6 @@
   @if (coinAnimation()) {
     <div class="coin-animation">
       @for (coin of coinParticles(); track $index) {
-        <!-- Modyfikacja opóźnienia animacji dla każdej monety -->
         <div
           class="flying-coin"
           [style.left.px]="coinStartX()"
@@ -15,10 +14,20 @@
     </div>
   }
   <div class="display-card-container">
-    <div class="display-card-inner" [class.flipped]="isFlipped()">
+    <div
+      class="display-card-inner"
+      [class.flipped]="isFlipped() && flipDirection() === 'forward'"
+      [class.flipped-reverse]="isFlipped() && flipDirection() === 'reverse'"
+      [class.no-transition]="noTransition()"
+    >
       <!-- Przednia strona -->
       <div class="display-card display-card-front">
-        @if (currentCard(); as card) {
+        @if (loading() && !currentCard()) {
+          <div class="spinner-container">
+            <div class="eval-spinner"></div>
+            <p class="spinner-text">Wczytywanie fiszki...</p>
+          </div>
+        } @else if (currentCard(); as card) {
           <div class="display-card-header">
             <h2>Pytanie #{{ usedIds().length + 1 }}</h2>
           </div>
@@ -31,51 +40,90 @@
             <textarea
               placeholder="Wpisz swoją odpowiedź tutaj..."
               [value]="answer()"
+              [attr.maxlength]="maxAnswerLength"
               (input)="updateAnswer($any($event.target).value)"
             ></textarea>
+            <span class="char-counter" [class.limit-reached]="answer().length >= maxAnswerLength">
+              {{ answer().length }}/{{ maxAnswerLength }}
+            </span>
+          </div>
+        } @else if (loadError()) {
+          <div class="spinner-container">
+            <p class="spinner-text">Nie udało się pobrać fiszki.</p>
           </div>
         } @else {
-          <p>Wczytywanie fiszki...</p>
+          <div class="spinner-container">
+            <div class="eval-spinner"></div>
+            <p class="spinner-text">Wczytywanie fiszki...</p>
+          </div>
         }
       </div>
 
       <!-- Tylna strona -->
       <div class="display-card display-card-back">
-        @if (loading()) {
-          <p>Wczytywanie następnej fiszki...</p>
+        @if (evaluating()) {
+          <div class="spinner-container">
+            <div class="eval-spinner"></div>
+            <p class="spinner-text">Ewaluacja odpowiedzi...</p>
+          </div>
         } @else if (loadError()) {
           <p>Nie udało się pobrać fiszki.</p>
         } @else if (finished()) {
           <p>To już wszystkie fiszki.</p>
-        } @else if (isFlipped()) {
+        } @else if (answerAnalysis(); as feedback) {
+          <!-- TODO: poprawić formatowanie wyniku 
+          - kolejność ma być taka jak teraz więc trzeba będzie zmienić ramy fiszki
+          - przód fiszki również powinien mieć białą czcionkę
+        -->
           <div class="display-card-header">
-            <h2>Ilość żetonów zdobyta za odpowiedź</h2>
+            <h2>Otrzymałeś kredytów: {{ feedback.creditsReceived }}</h2>
           </div>
 
           <div class="display-card-content">
-            <p class="question-text">Jakaś odpowiedź wygenerowana przez LLM</p>
+            <p class="answer-text">
+              <strong>Twoja odpowiedź:</strong><br />{{ feedback.userAnswer }}
+            </p>
           </div>
 
           <div class="display-card-answer">
-            <p class="answer-text">Ocena odpowiedzi przez LLM</p>
+            <p class="eval-verdict">
+              Twoja odpowiedź jest {{ feedback.verdict }}, a jej zgodność z wzorcem wynosi
+              {{ feedback.score }}%.
+            </p>
+          </div>
+
+          <div class="display-card-content">
+            <p class="answer-text">{{ feedback.explanation }}</p>
+          </div>
+
+          <div class="display-card-content">
+            <p class="answer-text">
+              <strong>Odpowiedź wzorcowa:</strong><br />{{ feedback.expectedAnswer }}
+            </p>
           </div>
         }
       </div>
     </div>
   </div>
 
+  @if (evalError(); as error) {
+    <div class="eval-error-banner">
+      <p>{{ error }}</p>
+    </div>
+  }
+
   <div class="button-wrapper">
     <button class="return-button" type="button" (click)="returnToMenu()">Powrót do menu</button>
 
     @if (loadError()) {
-      <button class="submit-button" type="button" (click)="loadFlashcards()">
+      <button class="submit-button" type="button" (click)="retryLoadFlashcard()">
         Spróbuj ponownie
       </button>
     } @else if (!finished() && currentCard()) {
       <button
         class="previous-button"
         type="button"
-        [disabled]="!usedIds().length || isFlipped() || loading()"
+        [disabled]="!usedIds().length || loading()"
         (click)="previousFlashcard()"
       >
         Poprzednie pytanie

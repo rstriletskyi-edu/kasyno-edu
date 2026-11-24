@@ -2,6 +2,7 @@ from fastapi import APIRouter, Body, Depends, Response, status
 
 from src.dependencies import get_evaluation_service, get_verified_user
 from src.models.auth import AuthenticatedUser
+from src.services.user_service import UserService
 from src.models.evaluation import (
     EvaluationRequest,
     EvaluationResult,
@@ -36,6 +37,27 @@ def create_llm_session(
 ) -> LlmSessionResponse:
     response.headers["Cache-Control"] = "no-store"
     return LlmSessionResponse(session_id=service.create_session(user.uid, payload))
+
+
+@router.get(
+    "/sessions/{session_id}",
+    response_model=LlmSessionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verify an active LLM grading session",
+    responses={
+        401: {"description": "Missing or invalid Firebase ID token"},
+        403: {"description": "Email verification required"},
+        404: {"description": "Unknown or expired LLM session"},
+    },
+)
+def verify_llm_session(
+    session_id: str,
+    response: Response,
+    user: AuthenticatedUser = Depends(get_verified_user),
+    service: EvaluationService = Depends(get_evaluation_service),
+) -> LlmSessionResponse:
+    response.headers["Cache-Control"] = "no-store"
+    return LlmSessionResponse(session_id=service.verify_session(user.uid, session_id))
 
 
 @router.post(

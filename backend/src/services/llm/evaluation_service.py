@@ -70,6 +70,10 @@ class EvaluationService:
         )
         return session_id
 
+    def verify_session(self, uid: str, session_id: str) -> str:
+        self._require_session(uid, session_id)
+        return session_id
+
     async def evaluate(
         self, uid: str, session_id: str, payload: EvaluationRequest
     ) -> EvaluationResult:
