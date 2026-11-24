@@ -432,14 +432,19 @@ def test_other_user_bad_id_and_expired_session_are_not_found(
 
 
 @pytest.mark.parametrize(
-    "path",
-    ["/api/llm/sessions", "/api/llm/sessions/missing/evaluations"],
+    ("method", "path", "json_body"),
+    [
+        ("POST", "/api/llm/sessions", None),
+        ("GET", "/api/llm/sessions/missing", None),
+        ("POST", "/api/llm/sessions/missing/evaluations", GRADING_BODY),
+    ],
 )
-def test_llm_routes_require_authentication(harness: callable, path: str) -> None:
+def test_llm_routes_require_authentication(
+    harness: callable, method: str, path: str, json_body: dict[str, object] | None
+) -> None:
     client, _model, _clock = harness()
-    json = None if path.endswith("/sessions") else GRADING_BODY
 
-    response = client.post(path, json=json)
+    response = client.request(method, path, json=json_body)
 
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"
@@ -518,3 +523,132 @@ def test_factory_reports_missing_optional_provider(monkeypatch: pytest.MonkeyPat
 
     with pytest.raises(LlmNotConfiguredError, match="langchain-google-genai"):
         build_chat_model(settings_for(llm_provider="google_genai"), "sk-test")
+
+
+def test_verify_session_enforces_ownership_and_expiration(
+    harness: callable, verify_token: Mock
+) -> None:
+    client, _model, clock = harness(llm_api_key="env-key")
+    session_id = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+
+    verified = client.get(f"/api/llm/sessions/{session_id}", headers=AUTH)
+    assert verified.status_code == 200
+    assert verified.headers["cache-control"] == "no-store"
+    assert verified.json() == {"session_id": session_id}
+
+    missing = client.get("/api/llm/sessions/missing", headers=AUTH)
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "LLM session not found"
+
+    verify_token.return_value = token_for("other-user")
+    foreign = client.get(f"/api/llm/sessions/{session_id}", headers=AUTH)
+    assert foreign.status_code == 404
+    assert foreign.json()["detail"] == "LLM session not found"
+
+    verify_token.return_value = token_for("firebase-user-123")
+    still_owned = client.get(f"/api/llm/sessions/{session_id}", headers=AUTH)
+    assert still_owned.status_code == 200
+
+    clock.advance(3601)
+    expired = client.get(f"/api/llm/sessions/{session_id}", headers=AUTH)
+    assert expired.status_code == 404
+
+
+def test_create_session_caps_sessions_per_user_and_purges_expired(
+    harness: callable, verify_token: Mock
+) -> None:
+    client, _model, clock = harness(llm_api_key="env-key", llm_max_sessions_per_user=2)
+
+    verify_token.return_value = token_for("other-user")
+    other_session = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+
+    verify_token.return_value = token_for("firebase-user-123")
+    first = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+    second = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+
+    failed = client.post("/api/llm/sessions", json={"provider": "nope"}, headers=AUTH)
+    assert failed.status_code == 503
+    assert client.get(f"/api/llm/sessions/{first}", headers=AUTH).status_code == 200
+    assert client.get(f"/api/llm/sessions/{second}", headers=AUTH).status_code == 200
+
+    third = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+    assert client.get(f"/api/llm/sessions/{first}", headers=AUTH).status_code == 404
+    assert client.get(f"/api/llm/sessions/{second}", headers=AUTH).status_code == 200
+    assert client.get(f"/api/llm/sessions/{third}", headers=AUTH).status_code == 200
+
+    verify_token.return_value = token_for("other-user")
+    assert client.get(f"/api/llm/sessions/{other_session}", headers=AUTH).status_code == 200
+
+    clock.advance(3601)
+    verify_token.return_value = token_for("firebase-user-123")
+    fresh = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+    assert list(client.app.state.evaluation_service._sessions.keys()) == [fresh]
+
+
+def test_create_session_rate_limit_is_scoped_per_user_and_resets_after_window(
+    harness: callable, verify_token: Mock
+) -> None:
+    client, _model, clock = harness(
+        llm_api_key="env-key",
+        llm_session_rate_limit_max=2,
+        llm_rate_limit_window_seconds=60,
+    )
+
+    assert client.post("/api/llm/sessions", headers=AUTH).status_code == 201
+    assert client.post("/api/llm/sessions", headers=AUTH).status_code == 201
+
+    limited = client.post("/api/llm/sessions", headers=AUTH)
+    assert limited.status_code == 429
+    assert limited.headers["retry-after"] == "60"
+
+    verify_token.return_value = token_for("other-user")
+    assert client.post("/api/llm/sessions", headers=AUTH).status_code == 201
+
+    clock.advance(60)
+    verify_token.return_value = token_for("firebase-user-123")
+    assert client.post("/api/llm/sessions", headers=AUTH).status_code == 201
+
+
+def test_verify_session_rate_limit_returns_429(harness: callable) -> None:
+    client, _model, _clock = harness(
+        llm_api_key="env-key",
+        llm_verify_rate_limit_max=2,
+        llm_rate_limit_window_seconds=60,
+    )
+    session_id = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+
+    assert client.get(f"/api/llm/sessions/{session_id}", headers=AUTH).status_code == 200
+    assert client.get(f"/api/llm/sessions/{session_id}", headers=AUTH).status_code == 200
+
+    limited = client.get(f"/api/llm/sessions/{session_id}", headers=AUTH)
+    assert limited.status_code == 429
+    assert limited.headers["retry-after"] == "60"
+
+
+def test_evaluate_rate_limit_blocks_before_calling_model(harness: callable) -> None:
+    client, model, _clock = harness(
+        llm_api_key="env-key",
+        llm_eval_rate_limit_max=2,
+        llm_rate_limit_window_seconds=60,
+    )
+    session_id = client.post("/api/llm/sessions", headers=AUTH).json()["session_id"]
+
+    assert (
+        client.post(
+            f"/api/llm/sessions/{session_id}/evaluations", json=GRADING_BODY, headers=AUTH
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/api/llm/sessions/{session_id}/evaluations", json=GRADING_BODY, headers=AUTH
+        ).status_code
+        == 200
+    )
+
+    limited = client.post(
+        f"/api/llm/sessions/{session_id}/evaluations", json=GRADING_BODY, headers=AUTH
+    )
+    assert limited.status_code == 429
+    assert limited.headers["retry-after"] == "60"
+    assert model.calls == 2
