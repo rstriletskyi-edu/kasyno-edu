@@ -60,6 +60,15 @@ class LlmSessionNotFoundError(AppError):
     detail = "LLM session not found"
 
 
+class LlmRateLimitExceededError(AppError):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    detail = "Too many LLM requests. Please try again later."
+
+    def __init__(self, retry_after_seconds: int, detail: str | None = None) -> None:
+        self.headers = {"Retry-After": str(max(1, retry_after_seconds))}
+        super().__init__(detail)
+
+
 class AnswerTooLongError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     detail = "User answer exceeds the maximum length"

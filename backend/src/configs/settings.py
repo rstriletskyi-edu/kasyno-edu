@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = Field(default=20, gt=0)
     llm_max_answer_chars: int = Field(default=2000, gt=0)
     llm_session_ttl_seconds: int = Field(default=3600, gt=0)
+    llm_max_sessions_per_user: int = Field(default=5, gt=0)
+    llm_rate_limit_window_seconds: int = Field(default=60, gt=0)
+    llm_session_rate_limit_max: int = Field(default=10, gt=0)
+    llm_verify_rate_limit_max: int = Field(default=30, gt=0)
+    llm_eval_rate_limit_max: int = Field(default=20, gt=0)
     credits_engine: str = "linear"
 
     @field_validator("credits_engine", mode="before")
