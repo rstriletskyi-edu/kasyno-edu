@@ -6,7 +6,7 @@ import { Slots } from '../games/slots-components/slots/slots';
 export type GameType = 'blackjack' | 'roulette' | 'slots';
 
 @Component({
-  imports: [ Blackjack, Roulette, Slots ],
+  imports: [Blackjack, Roulette, Slots],
   selector: 'game-window',
   styleUrl: './game-window.css',
   templateUrl: './game-window.html',

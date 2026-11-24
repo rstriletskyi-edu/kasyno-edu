@@ -8,11 +8,11 @@ import { SlotsClient } from '../../../../../services/games-clients/slots-client'
   templateUrl: './slots.html',
 })
 export class Slots implements OnInit {
-
   private readonly client = inject(SlotsClient);
 
-  ngOnInit() {
+  protected readonly loading = signal<boolean>(false);
+  protected readonly error = signal<boolean>(false);
+  protected readonly errorMessage = signal<string>('');
 
-  }
-
+  ngOnInit() {}
 }

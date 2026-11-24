@@ -8,11 +8,11 @@ import { BlackjackClient } from '../../../../../services/games-clients/blackjack
   templateUrl: './blackjack.html',
 })
 export class Blackjack implements OnInit {
-
   private readonly client = inject(BlackjackClient);
 
-  ngOnInit() {
+  protected readonly loading = signal<boolean>(false);
+  protected readonly error = signal<boolean>(false);
+  protected readonly errorMessage = signal<string>('');
 
-  }
-
+  ngOnInit() {}
 }
