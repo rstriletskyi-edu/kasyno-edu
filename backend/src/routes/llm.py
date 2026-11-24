@@ -2,7 +2,6 @@ from fastapi import APIRouter, Body, Depends, Response, status
 
 from src.dependencies import get_evaluation_service, get_verified_user
 from src.models.auth import AuthenticatedUser
-from src.services.user_service import UserService
 from src.models.evaluation import (
     EvaluationRequest,
     EvaluationResult,
@@ -26,10 +25,11 @@ router = APIRouter(prefix="/llm", tags=["llm"])
     responses={
         401: {"description": "Missing or invalid Firebase ID token"},
         403: {"description": "Email verification required"},
+        429: {"description": "Too many LLM requests"},
         503: {"description": "No LLM API key is configured"},
     },
 )
-def create_llm_session(
+async def create_llm_session(
     response: Response,
     user: AuthenticatedUser = Depends(get_verified_user),
     service: EvaluationService = Depends(get_evaluation_service),
@@ -48,9 +48,10 @@ def create_llm_session(
         401: {"description": "Missing or invalid Firebase ID token"},
         403: {"description": "Email verification required"},
         404: {"description": "Unknown or expired LLM session"},
+        429: {"description": "Too many LLM requests"},
     },
 )
-def verify_llm_session(
+async def verify_llm_session(
     session_id: str,
     response: Response,
     user: AuthenticatedUser = Depends(get_verified_user),
@@ -70,6 +71,7 @@ def verify_llm_session(
         403: {"description": "Email verification required"},
         404: {"description": "Unknown or expired LLM session"},
         422: {"description": "Invalid grading request"},
+        429: {"description": "Too many LLM requests"},
         502: {"description": "LLM provider failed"},
         504: {"description": "LLM evaluation timed out"},
     },
@@ -82,4 +84,4 @@ async def evaluate_answer(
     service: EvaluationService = Depends(get_evaluation_service),
 ) -> EvaluationResult:
     response.headers["Cache-Control"] = "no-store"
-    return await service.evaluate(user.uid, session_id, payload) 
+    return await service.evaluate(user.uid, session_id, payload)

@@ -1,4 +1,6 @@
 import asyncio
+import math
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -15,10 +17,11 @@ from src.services.llm.evaluation_graph import EvaluationState, build_evaluation_
 from src.services.llm.llm_factory import build_chat_model, resolve_provider
 from src.utils.exceptions import (
     AppError,
+    FlashcardLookupTimeoutError,
     LlmEvaluationError,
     LlmNotConfiguredError,
+    LlmRateLimitExceededError,
     LlmSessionNotFoundError,
-    FlashcardLookupTimeoutError,
     LlmTimeoutError,
 )
 
@@ -50,8 +53,10 @@ class EvaluationService:
             settings.credits_engine
         )
         self._sessions: dict[str, _LlmSession] = {}
+        self._rate_limit_hits: dict[tuple[str, str], deque[datetime]] = {}
 
     def create_session(self, uid: str, payload: LlmSessionCreateRequest) -> str:
+        self._check_rate_limit("create_session", uid, self._settings.llm_session_rate_limit_max)
         api_key = payload.api_key.get_secret_value() if payload.api_key is not None else None
         resolved_key = self._resolve_key(api_key)
         provider = resolve_provider(self._resolve_choice(payload.provider, self._settings.llm_provider))
@@ -59,6 +64,9 @@ class EvaluationService:
         base_url = self._resolve_base_url(payload.base_url)
         if provider == "ollama" and not base_url:
             raise LlmNotConfiguredError("Model URL is required for provider ollama")
+        now = self._clock()
+        self._purge_expired(now)
+        self._enforce_user_session_limit(uid)
         session_id = str(uuid4())
         self._sessions[session_id] = _LlmSession(
             uid=uid,
@@ -66,17 +74,19 @@ class EvaluationService:
             provider=provider,
             model=model,
             base_url=base_url,
-            expires_at=self._clock() + timedelta(seconds=self._settings.llm_session_ttl_seconds),
+            expires_at=now + timedelta(seconds=self._settings.llm_session_ttl_seconds),
         )
         return session_id
 
     def verify_session(self, uid: str, session_id: str) -> str:
+        self._check_rate_limit("verify_session", uid, self._settings.llm_verify_rate_limit_max)
         self._require_session(uid, session_id)
         return session_id
 
     async def evaluate(
         self, uid: str, session_id: str, payload: EvaluationRequest
     ) -> EvaluationResult:
+        self._check_rate_limit("evaluate", uid, self._settings.llm_eval_rate_limit_max)
         session = self._require_session(uid, session_id)
         flashcard = await self._load_flashcard(payload.question_id)
         session_settings = self._settings.model_copy(
@@ -148,6 +158,47 @@ class EvaluationService:
             return value
         fallback = (self._settings.llm_base_url or "").strip()
         return fallback or None
+
+    def _check_rate_limit(self, action: str, uid: str, max_requests: int) -> None:
+        now = self._clock()
+        window = timedelta(seconds=self._settings.llm_rate_limit_window_seconds)
+        cutoff = now - window
+        key = (action, uid)
+        hits = self._rate_limit_hits.get(key)
+        if hits is not None:
+            while hits and hits[0] <= cutoff:
+                hits.popleft()
+            if not hits:
+                del self._rate_limit_hits[key]
+                hits = None
+        if hits is not None and len(hits) >= max_requests:
+            retry_after = math.ceil((hits[0] + window - now).total_seconds())
+            raise LlmRateLimitExceededError(retry_after_seconds=retry_after)
+        if hits is None:
+            hits = deque()
+            self._rate_limit_hits[key] = hits
+        hits.append(now)
+
+    def _purge_expired(self, now: datetime) -> None:
+        expired_ids = [sid for sid, sess in self._sessions.items() if sess.expires_at <= now]
+        for sid in expired_ids:
+            del self._sessions[sid]
+
+        cutoff = now - timedelta(seconds=self._settings.llm_rate_limit_window_seconds)
+        empty_keys: list[tuple[str, str]] = []
+        for key, hits in self._rate_limit_hits.items():
+            while hits and hits[0] <= cutoff:
+                hits.popleft()
+            if not hits:
+                empty_keys.append(key)
+        for key in empty_keys:
+            del self._rate_limit_hits[key]
+
+    def _enforce_user_session_limit(self, uid: str) -> None:
+        user_session_ids = [sid for sid, sess in self._sessions.items() if sess.uid == uid]
+        overflow = len(user_session_ids) - (self._settings.llm_max_sessions_per_user - 1)
+        for sid in user_session_ids[: max(0, overflow)]:
+            del self._sessions[sid]
 
     def _require_session(self, uid: str, session_id: str) -> _LlmSession:
         session = self._sessions.get(session_id)
