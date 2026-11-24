@@ -4,12 +4,6 @@ import { Observable, map } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 
-export interface EvalResponse {
-  score: number;
-  verdict: string;
-  explanation: string;
-}
-
 export interface LlmSessionRequest {
   api_key?: string | null;
   provider?: string | null;
@@ -46,8 +40,17 @@ export class LlmEvalService {
       .pipe(map((res) => res.session_id));
   }
 
-  getAnswerEvaluation(sessionId: string, evalRequest: EvaluationRequest): Observable<EvalResponse> {
-    return this.http.post<EvalResponse>(
+  verifyLlmSession(sessionId: string): Observable<string> {
+    return this.http
+      .get<LlmSessionResponse>(`${environment.apiUrl}/llm/sessions/${sessionId}`)
+      .pipe(map((res) => res.session_id));
+  }
+
+  getAnswerEvaluation(
+    sessionId: string,
+    evalRequest: EvaluationRequest,
+  ): Observable<EvaluationResult> {
+    return this.http.post<EvaluationResult>(
       `${environment.apiUrl}/llm/sessions/${sessionId}/evaluations`,
       evalRequest,
     );

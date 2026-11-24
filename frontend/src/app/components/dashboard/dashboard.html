@@ -1,26 +1,33 @@
-<h1>Twoje konto</h1>
-@if (loading()) {
-  <p role="status">Ładowanie profilu…</p>
-}
-@if (user(); as profile) {
-  <p>Zalogowano jako {{ profile.display_name || profile.email || 'użytkownik' }}.</p>
-  <p>
-    UID: <code>{{ profile.uid }}</code>
-  </p>
-  <p>Saldo: {{ profile.profile.credits }} żetonów</p>
-  <p>Profil został potwierdzony przez API i odczytany z Firestore.</p>
-}
-@if (error()) {
-  <p role="alert">{{ error() }}</p>
-  <button type="button" (click)="loadProfile()" [disabled]="loading()">Spróbuj ponownie</button>
-}
-@if (development) {
-  <details>
-    <summary>Testowanie lokalnego API</summary>
-    <p>Otwórz http://127.0.0.1:8000/docs i użyj tokenu w polu Authorize.</p>
-    <button type="button" (click)="copyToken()">Kopiuj ID token do Swaggera</button>
-    @if (tokenMessage()) {
-      <p role="status">{{ tokenMessage() }}</p>
-    }
-  </details>
-}
+<div class="dashboard-card">
+  <h1>Twoje konto</h1>
+  @if (loading()) {
+    <p role="status">Ładowanie profilu…</p>
+  }
+  @if (user(); as profile) {
+    <p>Zalogowano jako {{ profile.display_name || profile.email || 'użytkownik' }}.</p>
+    <p>
+      UID: <code>{{ profile.uid }}</code>
+    </p>
+    <p>Saldo: {{ profile.profile.credits }} żetonów</p>
+    <p>Profil został potwierdzony przez API i odczytany z Firestore.</p>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+    <button type="button" (click)="loadProfile()" [disabled]="loading()">Spróbuj ponownie</button>
+  }
+  @if (development) {
+    <details>
+      <summary>Testowanie lokalnego API</summary>
+      <p>Otwórz http://127.0.0.1:8000/docs i użyj tokenu w polu Authorize.</p>
+      <button type="button" (click)="copyToken()">Kopiuj ID token do Swaggera</button>
+      @if (tokenMessage()) {
+        <p role="status">{{ tokenMessage() }}</p>
+      }
+    </details>
+  }
+  <div class="dashboard-actions">
+    <button type="button" class="return-flashcards-button" (click)="returnToFlashcards()">
+      Powrót do fiszek
+    </button>
+  </div>
+</div>
