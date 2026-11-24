@@ -8,11 +8,11 @@ import { RouletteClient } from '../../../../../services/games-clients/roulette-c
   templateUrl: './roulette.html',
 })
 export class Roulette implements OnInit {
-  
   private readonly client = inject(RouletteClient);
-  
-  ngOnInit() {
 
-  }
+  protected readonly loading = signal<boolean>(false);
+  protected readonly error = signal<boolean>(false);
+  protected readonly errorMessage = signal<string>('');
 
+  ngOnInit() {}
 }

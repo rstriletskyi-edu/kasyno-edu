@@ -4,10 +4,6 @@ import { Injectable, inject } from '@angular/core';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
-export class BlackjackClient { 
-
+export class BlackjackClient {
   private readonly http = inject(HttpClient);
-
-  
-
 }

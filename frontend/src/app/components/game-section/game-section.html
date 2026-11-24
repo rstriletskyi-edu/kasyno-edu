@@ -12,10 +12,17 @@
 
   <game-window [selectedGame]="selectedGame()?.id ?? null" />
 
-  <div class="error">
-    <!-- wystylizować i obsłużyć tak jak w learning section -->
-    <!-- rozważyć przeniesienie klasy z błędem do globalnego styles.css -->
-  </div>
+  @if (selectedGame()) {
+    <button type="button" class="play-button" [disabled]="loading()" (click)="playGame()">
+      Graj
+    </button>
+  }
+
+  @if (error()) {
+    <div class="error-banner" role="alert">
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
 
   <div class="dropdown-wrapper">
     <button type="button" class="dropdown-toggle" (click)="toggleDropdown()">
