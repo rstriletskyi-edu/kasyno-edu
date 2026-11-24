@@ -78,3 +78,13 @@ class FlashcardLookupTimeoutError(AppError):
 class LlmEvaluationError(AppError):
     status_code = status.HTTP_502_BAD_GATEWAY
     detail = "LLM evaluation failed"
+
+
+class InsufficientCreditsError(AppError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "Insufficient credits"
+
+
+class BetLimitExceededError(AppError):
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
+    detail = "Bet exceeds configured table limits"
