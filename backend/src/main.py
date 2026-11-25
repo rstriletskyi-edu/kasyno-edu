@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from src.configs.settings import get_settings
 from src.middlewares.security import RateLimiterMiddleware, SecurityHeadersMiddleware
-from src.routes import auth, flashcards, health, llm, ruleta
+from src.routes import auth, flashcards, health, llm, ruleta, slots
 from src.services.flashcard_service import FlashcardService
 from src.services.llm.evaluation_service import EvaluationService
 from src.services.firebase_service import init_firebase
@@ -56,6 +56,7 @@ def create_app(rate_limit_max: int = 100, rate_limit_window: int = 60) -> FastAP
     app.include_router(flashcards.router, prefix=settings.api_prefix)
     app.include_router(llm.router, prefix=settings.api_prefix)
     app.include_router(ruleta.router, prefix=settings.api_prefix)
+    app.include_router(slots.router, prefix=settings.api_prefix)
 
     return app
 
