@@ -1,0 +1,21 @@
+{
+  "reels": 3,
+  "rows": 1,
+  "symbols": [
+    { "id": "cherry", "label": "Wiśnia", "weight": 30 },
+    { "id": "lemon", "label": "Cytryna", "weight": 25 },
+    { "id": "orange", "label": "Pomarańcza", "weight": 20 },
+    { "id": "bell", "label": "Dzwonek", "weight": 13 },
+    { "id": "star", "label": "Gwiazda", "weight": 8 },
+    { "id": "seven", "label": "Siódemka", "weight": 4 }
+  ],
+  "paytable": [
+    { "symbol": "seven", "count": 3, "multiplier": 500, "name": "Jackpot 777" },
+    { "symbol": "star", "count": 3, "multiplier": 75, "name": "Potrójna gwiazda" },
+    { "symbol": "bell", "count": 3, "multiplier": 30, "name": "Potrójny dzwonek" },
+    { "symbol": "orange", "count": 3, "multiplier": 15, "name": "Potrójna pomarańcza" },
+    { "symbol": "lemon", "count": 3, "multiplier": 10, "name": "Potrójna cytryna" },
+    { "symbol": "cherry", "count": 3, "multiplier": 6, "name": "Potrójna wiśnia" },
+    { "symbol": "cherry", "count": 2, "multiplier": 2, "name": "Podwójna wiśnia" }
+  ]
+}
