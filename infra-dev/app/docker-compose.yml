@@ -13,6 +13,12 @@ services:
       - backend
     restart: unless-stopped
 
+  certbot:
+    image: certbot/certbot
+    profiles: ["tools"]
+    volumes:
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
 
   frontend:
     image: ghcr.io/rstriletskyi-edu/kasyno-edu/frontend:${IMAGE_TAG}
