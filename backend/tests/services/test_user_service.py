@@ -334,3 +334,75 @@ def test_settle_game_wager_maps_firestore_errors_to_profile_unavailable(
         )
 
     assert db.transactions[0].rolled_back is True
+
+
+# --- deduct_game_wager & credit_game_payout ---
+
+
+def test_deduct_game_wager_debits_balance_and_prevents_overdraft() -> None:
+    db = FakeFirestoreDB(credits=200)
+    service = UserService(db)  # type: ignore[arg-type]
+
+    new_balance = service.deduct_game_wager(make_user(), 50, "Blackjack: zakład")
+
+    assert new_balance == 150
+    assert db.state["credits"] == 150
+    assert db.state["transactions"] == [
+        ("tx-1", {"value": -50.0, "Reason": "Blackjack: zakład", "timestamp": SERVER_TIMESTAMP})
+    ]
+
+    with pytest.raises(InsufficientCreditsError):
+        service.deduct_game_wager(make_user(), 151, "Blackjack: zakład")
+    assert db.state["credits"] == 150
+    assert len(db.state["transactions"]) == 1
+
+
+def test_credit_game_payout_increments_balance_and_logs_transaction() -> None:
+    db = FakeFirestoreDB(credits=150)
+    service = UserService(db)  # type: ignore[arg-type]
+
+    new_balance = service.credit_game_payout(make_user(), 100, "Blackjack: wygrana")
+
+    assert new_balance == 250
+    assert isinstance(db.state["credits"], int)
+    assert db.state["credits"] == 250
+    assert db.transactions[0].committed is True
+    assert db.state["transactions"] == [
+        ("tx-1", {"value": 100.0, "Reason": "Blackjack: wygrana", "timestamp": SERVER_TIMESTAMP})
+    ]
+
+
+def test_credit_game_payout_validates_inputs_handles_errors_and_retries_aborted() -> None:
+    db = FakeFirestoreDB(credits=100)
+    service = UserService(db)  # type: ignore[arg-type]
+
+    for bad_amount in (0, -10, True, False, 10.5):
+        with pytest.raises(ValueError):
+            service.credit_game_payout(make_user(), bad_amount, "win")  # type: ignore[arg-type]
+    with pytest.raises(AuthenticationError):
+        service.credit_game_payout(make_user("a/b"), 10, "win")
+
+    missing_db = FakeFirestoreDB(exists=False)
+    with pytest.raises(ProfileUnavailableError):
+        UserService(missing_db).credit_game_payout(make_user(), 10, "win")  # type: ignore[arg-type]
+
+    err_db = FakeFirestoreDB(credits=100, get_error=PermissionDenied("denied"))
+    with pytest.raises(ProfileUnavailableError):
+        UserService(err_db).credit_game_payout(make_user(), 10, "win")  # type: ignore[arg-type]
+    assert err_db.transactions[0].rolled_back is True
+
+    def concurrent_credit(attempt: int, state: dict[str, object]) -> None:
+        if attempt == 1:
+            state["credits"] = 200
+
+    retry_db = FakeFirestoreDB(
+        credits=100,
+        commit_errors=[Aborted("concurrent write")],
+        on_retry=concurrent_credit,
+    )
+    new_balance = UserService(retry_db).credit_game_payout(make_user(), 50, "win")  # type: ignore[arg-type]
+    assert retry_db.transactions[0].attempts == 2
+    assert new_balance == 250
+    assert retry_db.state["transactions"] == [
+        ("tx-2", {"value": 50.0, "Reason": "win", "timestamp": SERVER_TIMESTAMP})
+    ]
