@@ -97,3 +97,18 @@ class InsufficientCreditsError(AppError):
 class BetLimitExceededError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     detail = "Bet exceeds configured table limits"
+
+
+class BlackjackGameNotFoundError(AppError):
+    status_code = status.HTTP_404_NOT_FOUND
+    detail = "Blackjack game not found"
+
+
+class BlackjackInvalidActionError(AppError):
+    status_code = status.HTTP_409_CONFLICT
+    detail = "Action is not allowed in the current game state"
+
+
+class BlackjackActiveGameExistsError(AppError):
+    status_code = status.HTTP_409_CONFLICT
+    detail = "An active Blackjack game already exists"

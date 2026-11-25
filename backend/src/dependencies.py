@@ -1,6 +1,7 @@
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from src.configs.games.blackjack import BlackjackSettings, get_blackjack_settings
 from src.configs.games.ruleta import RuletaSettings, get_ruleta_settings
 from src.configs.games.slots import SlotsSettings, get_slots_settings
 from src.configs.settings import Settings, get_settings
@@ -10,6 +11,7 @@ from src.services.llm.evaluation_service import EvaluationService
 from src.services.health_service import HealthService
 from src.services.firebase_service import get_firestore
 from src.services.flashcard_service import FlashcardService
+from src.services.games.blackjack_service import BlackjackService, BlackjackSessionStore
 from src.services.games.ruleta_service import RuletaService
 from src.services.games.slots_service import SlotsService
 from src.services.user_service import UserService
@@ -66,3 +68,15 @@ def get_slots_service(
     settings: SlotsSettings = Depends(get_slots_settings),
 ) -> SlotsService:
     return SlotsService(user_service=user_service, settings=settings)
+
+
+def get_blackjack_store(request: Request) -> BlackjackSessionStore:
+    return request.app.state.blackjack_store
+
+
+def get_blackjack_service(
+    user_service: UserService = Depends(get_user_service),
+    settings: BlackjackSettings = Depends(get_blackjack_settings),
+    store: BlackjackSessionStore = Depends(get_blackjack_store),
+) -> BlackjackService:
+    return BlackjackService(user_service=user_service, settings=settings, store=store)

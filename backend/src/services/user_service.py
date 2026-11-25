@@ -140,6 +140,55 @@ class UserService:
         except (GoogleAPICallError, RetryError, GoogleAuthError):
             raise ProfileUnavailableError() from None
 
+    def deduct_game_wager(
+        self,
+        user: AuthenticatedUser,
+        amount: int,
+        reason: str,
+    ) -> int:
+        """Atomically verify balance, deduct an upfront wager, and log the debit."""
+        return self.settle_game_wager(
+            user,
+            bet=amount,
+            payout=0,
+            bet_reason=reason,
+            win_reason="",
+        )
+
+    def credit_game_payout(
+        self,
+        user: AuthenticatedUser,
+        amount: int,
+        reason: str,
+    ) -> int:
+        """Atomically credit a positive payout or refund and log the transaction."""
+        if isinstance(amount, bool) or not isinstance(amount, int) or amount <= 0:
+            raise ValueError("Payout amount must be a positive integer")
+        self._validate_uid(user.uid)
+
+        user_reference = self._db.collection("users").document(user.uid)
+
+        @firestore.transactional
+        def credit(transaction, reference) -> int:
+            snapshot = reference.get(transaction=transaction)
+            if not snapshot.exists:
+                raise ProfileUnavailableError()
+            data = snapshot.to_dict() or {}
+            current_credits = int(data.get("credits", 0))
+            new_credits = current_credits + amount
+            transaction.update(reference, {"credits": new_credits})
+            transaction.create(
+                reference.collection("transactions").document(),
+                self._transaction_document(amount, reason),
+            )
+            return new_credits
+
+        try:
+            transaction = self._db.transaction()
+            return credit(transaction, user_reference)
+        except (GoogleAPICallError, RetryError, GoogleAuthError):
+            raise ProfileUnavailableError() from None
+
     def get_credits(self, user: AuthenticatedUser) -> int:
         self._validate_uid(user.uid)
         snapshot = (
