@@ -130,7 +130,7 @@ jobs:
           docker compose pull
           docker compose up -d --remove-orphans
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost/api/health >/dev/null; then
+            if curl -fsS --resolve dev.edu-kasyno.online:443:127.0.0.1 https://dev.edu-kasyno.online/api/health >/dev/null; then
               echo "$NEW_TAG" > .image_tag
               echo "Deploy OK: $NEW_TAG"
               exit 0
