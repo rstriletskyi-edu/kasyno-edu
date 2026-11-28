@@ -13,6 +13,7 @@ import { Subscription } from 'rxjs';
 import { Flashcard, FlashcardsService } from '../../../services/flashcards.service';
 import { LlmEvalService, EvaluationResult } from '../../../services/llm-eval.service';
 import { SessionStorageService } from '../../../services/session-storage.service';
+import { CurrentUserService } from '../../../services/current-user.service';
 
 export const FLASHCARD_STATE_STORAGE_KEY = 'flashcard_state';
 export const MAX_ANSWER_LENGTH = 2000;
@@ -46,6 +47,7 @@ export class DisplayCards implements OnInit, OnDestroy {
   private readonly flashcardsService = inject(FlashcardsService);
   private readonly evalService = inject(LlmEvalService);
   private readonly storageService = inject(SessionStorageService);
+  private readonly users = inject(CurrentUserService);
 
   private evalSubscription: Subscription | null = null;
   private cardSubscription: Subscription | null = null;
@@ -355,6 +357,7 @@ export class DisplayCards implements OnInit, OnDestroy {
             explanation: evaluation.explanation,
           };
           this.answerAnalysis.set(analysis);
+          this.users.refreshCredits();
           this.usedIds.update((ids) => (ids.includes(card.id) ? ids : [...ids, card.id]));
           this.evaluating.set(false);
           this.loading.set(false);
