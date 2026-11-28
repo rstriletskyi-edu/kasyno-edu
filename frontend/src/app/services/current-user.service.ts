@@ -20,9 +20,9 @@ export class CurrentUserService {
   readonly credits = signal(0);
 
   getMe() {
-    return this.http.get<CurrentUser>(`${environment.apiUrl}/auth/me`).pipe(
-      tap((user) => this.credits.set(user.profile.credits)),
-    );
+    return this.http
+      .get<CurrentUser>(`${environment.apiUrl}/auth/me`)
+      .pipe(tap((user) => this.credits.set(user.profile.credits)));
   }
 
   refreshCredits() {
