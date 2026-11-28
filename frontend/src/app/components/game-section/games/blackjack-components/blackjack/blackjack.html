@@ -1,1 +1,116 @@
-<p>blackjack works!</p>
+<section class="blackjack-table" aria-label="Gra Blackjack">
+  <header class="table-header">
+    <div>
+      <p class="table-label">Classic Blackjack</p>
+      <h2>Twój stół</h2>
+    </div>
+    <div class="balance">
+      <span>Saldo</span>
+      <strong>{{ balance() }} żetonów</strong>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="table-error" role="alert">{{ errorMessage() }}</p>
+  }
+
+  <div class="table-content">
+    <section class="hand" aria-label="Karty krupiera">
+      <div class="hand-heading">
+        <h3>Krupier</h3>
+        @if (dealerCards().length) {
+          <span>{{ dealerValue() }} pkt</span>
+        }
+      </div>
+      <div class="cards">
+        @for (card of dealerCards(); track $index) {
+          <div class="card" [class.red]="cardIsRed(card)">{{ cardSymbol(card) }}</div>
+        }
+        @for (_ of hiddenCards(); track $index) {
+          <div class="card hidden-card" aria-label="Zakryta karta"></div>
+        }
+      </div>
+    </section>
+
+    <div class="table-center">
+      @if (status() === 'finished') {
+        <div class="round-result">
+          <strong>{{ outcomeLabel() }}</strong>
+          <span>Wypłata: {{ payout() }}</span>
+        </div>
+      } @else if (status() === 'in_progress') {
+        <span class="round-status">Runda trwa</span>
+      } @else {
+        <span class="round-status">Rozpocznij rundę</span>
+      }
+    </div>
+
+    <section class="hand" aria-label="Twoje karty">
+      <div class="hand-heading">
+        <h3>Ty</h3>
+        @if (playerCards().length) {
+          <span>{{ playerValue() }} pkt{{ playerIsSoft() ? ' · soft' : '' }}</span>
+        }
+      </div>
+      <div class="cards">
+        @for (card of playerCards(); track $index) {
+          <div class="card" [class.red]="cardIsRed(card)">{{ cardSymbol(card) }}</div>
+        }
+      </div>
+    </section>
+  </div>
+
+  <footer class="table-controls">
+    @if (status() !== 'in_progress') {
+      <label class="stake-field">
+        <span>Stawka</span>
+        <input
+          type="number"
+          min="1"
+          [value]="stake()"
+          [disabled]="loading()"
+          (input)="changeStake($any($event.target).value)"
+        />
+      </label>
+      <button
+        type="button"
+        class="action-button primary"
+        [disabled]="stake() <= 0 || loading()"
+        (click)="requestStart()"
+      >
+        {{ loading() ? 'Rozdawanie…' : 'Rozdaj' }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="action-button"
+        [disabled]="!availableActions().includes('hit') || loading()"
+        (click)="requestHit()"
+      >
+        Hit
+      </button>
+      <button
+        type="button"
+        class="action-button"
+        [disabled]="!availableActions().includes('stand') || loading()"
+        (click)="requestStand()"
+      >
+        Stand
+      </button>
+      @if (availableActions().includes('double')) {
+        <button
+          type="button"
+          class="action-button"
+          [disabled]="loading()"
+          (click)="requestDouble()"
+        >
+          Double
+        </button>
+      }
+    }
+
+    @if (status() === 'finished') {
+      <span class="bet-summary">Stawka: {{ betAmount() }}</span>
+    }
+  </footer>
+</section>
