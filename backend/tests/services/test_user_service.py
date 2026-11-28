@@ -84,6 +84,43 @@ def test_add_and_remove_credits_reject_invalid_amounts_before_firestore(
     assert db.transactions == []
 
 
+def test_add_and_remove_credits_raise_profile_unavailable_when_missing() -> None:
+    db = FakeFirestoreDB(exists=False)
+    service = UserService(db)  # type: ignore[arg-type]
+
+    with pytest.raises(ProfileUnavailableError):
+        service.add_credits(make_user(), 10, "Ocena fiszki")
+    assert db.transactions[0].rolled_back is True
+
+    with pytest.raises(ProfileUnavailableError):
+        service.remove_credits(make_user(), 10, "Wykorzystanie gry")
+    assert db.transactions[1].rolled_back is True
+    assert db.state["transactions"] == []
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        PermissionDenied("firestore permission denied"),
+        RetryError("deadline exceeded", cause=RuntimeError("timeout")),
+        GoogleAuthError("invalid service credentials"),
+    ],
+)
+def test_add_and_remove_credits_map_firestore_errors_to_profile_unavailable(
+    error: Exception,
+) -> None:
+    db = FakeFirestoreDB(credits=100, get_error=error)
+    service = UserService(db)  # type: ignore[arg-type]
+
+    with pytest.raises(ProfileUnavailableError):
+        service.add_credits(make_user(), 10, "Ocena fiszki")
+    assert db.transactions[0].rolled_back is True
+
+    with pytest.raises(ProfileUnavailableError):
+        service.remove_credits(make_user(), 10, "Wykorzystanie gry")
+    assert db.transactions[1].rolled_back is True
+
+
 @pytest.mark.parametrize("bad_uid", ["a/b", ".", ".."])
 def test_credit_and_transaction_methods_reject_unsafe_uids(bad_uid: str) -> None:
     db = FakeFirestoreDB(credits=100)
