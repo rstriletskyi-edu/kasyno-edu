@@ -1,5 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
+import { tap } from 'rxjs';
 import { catchError, of, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
@@ -16,8 +17,16 @@ export interface CurrentUser {
 export class CurrentUserService {
   private readonly http = inject(HttpClient);
 
+  readonly credits = signal(0);
+
   getMe() {
-    return this.http.get<CurrentUser>(`${environment.apiUrl}/auth/me`);
+    return this.http
+      .get<CurrentUser>(`${environment.apiUrl}/auth/me`)
+      .pipe(tap((user) => this.credits.set(user.profile.credits)));
+  }
+
+  refreshCredits() {
+    this.getMe().subscribe({ error: () => undefined });
   }
 
   /**

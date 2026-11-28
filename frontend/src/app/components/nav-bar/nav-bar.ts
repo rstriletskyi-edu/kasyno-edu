@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FirebaseAuthService } from '../../services/firebase-auth.service';
 import { SessionStorageService } from '../../services/session-storage.service';
+import { CurrentUserService } from '../../services/current-user.service';
 import { FLASHCARD_STATE_STORAGE_KEY } from '../learning-section/display-cards/display-cards';
 import {
   LearningSection,
@@ -14,13 +15,20 @@ import {
   styleUrl: './nav-bar.css',
   templateUrl: './nav-bar.html',
 })
-export class NavBar {
+export class NavBar implements OnInit {
   private readonly auth = inject(FirebaseAuthService);
   private readonly router = inject(Router);
   private readonly sessionStorageService = inject(SessionStorageService);
+  private readonly users = inject(CurrentUserService);
+
+  readonly credits = this.users.credits;
 
   readonly isLoggingOut = signal(false);
   readonly logoutError = signal('');
+
+  ngOnInit(): void {
+    this.users.refreshCredits();
+  }
 
   resetLearningSession(): void {
     LearningSection.clearInAppSessionFlag();
@@ -37,6 +45,7 @@ export class NavBar {
 
     try {
       await this.auth.signOut();
+      this.users.credits.set(0);
       await this.router.navigate(['/auth/login'], { replaceUrl: true });
     } catch {
       this.logoutError.set('Nie udało się zakończyć wylogowania. Spróbuj ponownie.');
