@@ -3,12 +3,17 @@ from datetime import datetime, timezone
 from unittest.mock import Mock
 
 from fastapi.testclient import TestClient
+from google.api_core.exceptions import PermissionDenied as FirestorePermissionDenied
+from google.cloud.firestore import SERVER_TIMESTAMP
 import pytest
 
 from src.configs.settings import Settings
 from src.dependencies import get_evaluation_service
+from src.models.evaluation import LlmGrade, Verdict
 from src.services.llm.evaluation_service import EvaluationService
+from src.services.user_service import UserService
 from tests.fakes.auth import AUTH_HEADERS, DEFAULT_UID, make_token_claims
+from tests.fakes.firestore import FakeFirestoreDB
 from tests.fakes.llm import (
     CARD_ANSWER,
     CARD_QUESTION,
@@ -22,6 +27,7 @@ from tests.fakes.llm import (
 @pytest.fixture
 def llm_client(
     make_client: Callable[..., TestClient],
+    make_firestore_db: Callable[..., FakeFirestoreDB],
     make_settings: Callable[..., Settings],
     verify_token: Mock,
 ) -> Callable[..., tuple[TestClient, EvaluationService, FakeModel, MutableClock]]:
@@ -29,6 +35,9 @@ def llm_client(
         model = overrides.pop("model", None)
         if not isinstance(model, FakeModel):
             model = FakeModel()
+        db = overrides.pop("db", None)
+        if not isinstance(db, FakeFirestoreDB):
+            db = make_firestore_db()
         clock = MutableClock(datetime(2026, 1, 1, tzinfo=timezone.utc))
         settings = make_settings(**overrides)
 
@@ -38,6 +47,7 @@ def llm_client(
         service = EvaluationService(
             settings,
             FakeFlashcards(),  # type: ignore[arg-type]
+            user_service=UserService(db),  # type: ignore[arg-type]
             model_factory=factory,  # type: ignore[arg-type]
             clock=clock,
         )
@@ -532,3 +542,152 @@ def test_evaluate_rate_limit_blocks_before_calling_model(
     assert limited.status_code == 429
     assert limited.headers["retry-after"] == "60"
     assert model.calls == 2
+
+
+def test_evaluate_credits_user_balance_and_logs_transaction(
+    llm_client: Callable[..., tuple[TestClient, EvaluationService, FakeModel, MutableClock]],
+    make_firestore_db: Callable[..., FakeFirestoreDB],
+) -> None:
+    db = make_firestore_db(credits=500)
+    client, _service, _model, _clock = llm_client(llm_api_key="env-key", db=db)
+    session_id = client.post("/api/llm/sessions", headers=AUTH_HEADERS).json()["session_id"]
+
+    graded = client.post(
+        f"/api/llm/sessions/{session_id}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH_HEADERS,
+    )
+
+    assert graded.status_code == 200
+    assert graded.json()["credits_received"] == 8
+    assert db.seen_uids == [DEFAULT_UID]
+    assert db.state["credits"] == 508.0
+    assert db.state["transactions"] == [
+        (
+            "tx-1",
+            {
+                "value": 8.0,
+                "Reason": EvaluationService.CREDITS_REASON,
+                "timestamp": SERVER_TIMESTAMP,
+            },
+        )
+    ]
+
+
+def test_evaluate_zero_credits_skips_crediting_user(
+    llm_client: Callable[..., tuple[TestClient, EvaluationService, FakeModel, MutableClock]],
+    make_firestore_db: Callable[..., FakeFirestoreDB],
+) -> None:
+    empty_db = make_firestore_db(credits=500)
+    empty_client, _service, _model, _clock = llm_client(llm_api_key="env-key", db=empty_db)
+    empty_session = empty_client.post(
+        "/api/llm/sessions", headers=AUTH_HEADERS
+    ).json()["session_id"]
+
+    empty_response = empty_client.post(
+        f"/api/llm/sessions/{empty_session}/evaluations",
+        json={**GRADING_BODY, "user_answer": "   "},
+        headers=AUTH_HEADERS,
+    )
+
+    assert empty_response.status_code == 200
+    assert empty_response.json()["credits_received"] == 0
+    assert empty_db.state["credits"] == 500
+    assert empty_db.state["transactions"] == []
+    assert empty_db.seen_uids == []
+
+    low_db = make_firestore_db(credits=500)
+    low_model = FakeModel(
+        result=LlmGrade(
+            score=9,
+            verdict=Verdict.INCORRECT,
+            explanation="Brak kluczowych informacji.",
+        )
+    )
+    low_client, _service, _model, _clock = llm_client(
+        llm_api_key="env-key", db=low_db, model=low_model
+    )
+    low_session = low_client.post("/api/llm/sessions", headers=AUTH_HEADERS).json()["session_id"]
+
+    low_response = low_client.post(
+        f"/api/llm/sessions/{low_session}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH_HEADERS,
+    )
+
+    assert low_response.status_code == 200
+    assert low_response.json()["credits_received"] == 0
+    assert low_db.state["credits"] == 500
+    assert low_db.state["transactions"] == []
+    assert low_db.seen_uids == []
+
+
+def test_evaluate_missing_profile_or_firestore_error_returns_503(
+    llm_client: Callable[..., tuple[TestClient, EvaluationService, FakeModel, MutableClock]],
+    make_firestore_db: Callable[..., FakeFirestoreDB],
+) -> None:
+    missing_db = make_firestore_db(exists=False)
+    missing_client, _service, _model, _clock = llm_client(
+        llm_api_key="env-key", db=missing_db
+    )
+    missing_session = missing_client.post(
+        "/api/llm/sessions", headers=AUTH_HEADERS
+    ).json()["session_id"]
+
+    missing_response = missing_client.post(
+        f"/api/llm/sessions/{missing_session}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH_HEADERS,
+    )
+    assert missing_response.status_code == 503
+    assert missing_response.json() == {"detail": "User profile service unavailable"}
+
+    error_db = make_firestore_db(
+        credits=500, get_error=FirestorePermissionDenied("firestore denied")
+    )
+    error_client, _service, _model, _clock = llm_client(llm_api_key="env-key", db=error_db)
+    error_session = error_client.post(
+        "/api/llm/sessions", headers=AUTH_HEADERS
+    ).json()["session_id"]
+
+    error_response = error_client.post(
+        f"/api/llm/sessions/{error_session}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH_HEADERS,
+    )
+    assert error_response.status_code == 503
+    assert error_response.json() == {"detail": "User profile service unavailable"}
+    assert "firestore denied" not in error_response.text
+
+
+def test_evaluate_failure_does_not_credit_user(
+    llm_client: Callable[..., tuple[TestClient, EvaluationService, FakeModel, MutableClock]],
+    make_firestore_db: Callable[..., FakeFirestoreDB],
+) -> None:
+    failing_model = FakeModel()
+    failing_model.error = RuntimeError("provider down")
+    db = make_firestore_db(credits=500)
+    client, _service, _model, _clock = llm_client(
+        llm_api_key="env-key", db=db, model=failing_model
+    )
+    session_id = client.post("/api/llm/sessions", headers=AUTH_HEADERS).json()["session_id"]
+
+    failed = client.post(
+        f"/api/llm/sessions/{session_id}/evaluations",
+        json=GRADING_BODY,
+        headers=AUTH_HEADERS,
+    )
+    assert failed.status_code == 502
+    assert db.state["credits"] == 500
+    assert db.state["transactions"] == []
+    assert db.seen_uids == []
+
+    missing_card = client.post(
+        f"/api/llm/sessions/{session_id}/evaluations",
+        json={**GRADING_BODY, "question_id": "missing"},
+        headers=AUTH_HEADERS,
+    )
+    assert missing_card.status_code == 404
+    assert db.state["credits"] == 500
+    assert db.state["transactions"] == []
+    assert db.seen_uids == []

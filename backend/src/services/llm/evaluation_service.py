@@ -9,12 +9,15 @@ from uuid import uuid4
 from langchain_core.language_models import BaseChatModel
 
 from src.configs.settings import Settings
+from src.models.auth import AuthenticatedUser
 from src.models.evaluation import EvaluationRequest, EvaluationResult, LlmGrade, LlmSessionCreateRequest
 from src.models.flashcard import FlashcardResponse
+from src.services.firebase_service import get_firestore
 from src.services.flashcard_service import FlashcardService
 from src.services.llm.credits_factory import CreditsCalculator, build_credits_calculator
 from src.services.llm.evaluation_graph import EvaluationState, build_evaluation_graph
 from src.services.llm.llm_factory import build_chat_model, resolve_provider
+from src.services.user_service import UserService
 from src.utils.exceptions import (
     AppError,
     FlashcardLookupTimeoutError,
@@ -37,16 +40,20 @@ class _LlmSession:
 
 
 class EvaluationService:
+    CREDITS_REASON = "Ocena fiszki"
+
     def __init__(
         self,
         settings: Settings,
         flashcards: FlashcardService,
+        user_service: UserService | None = None,
         model_factory: Callable[[Settings, str], BaseChatModel] | None = None,
         clock: Callable[[], datetime] | None = None,
         credits_calculator: CreditsCalculator | None = None,
     ) -> None:
         self._settings = settings
         self._flashcards = flashcards
+        self._user_service = user_service
         self._model_factory = model_factory or build_chat_model
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self.__credits_calculator = credits_calculator or build_credits_calculator(
@@ -84,10 +91,10 @@ class EvaluationService:
         return session_id
 
     async def evaluate(
-        self, uid: str, session_id: str, payload: EvaluationRequest
+        self, user: AuthenticatedUser, session_id: str, payload: EvaluationRequest
     ) -> EvaluationResult:
-        self._check_rate_limit("evaluate", uid, self._settings.llm_eval_rate_limit_max)
-        session = self._require_session(uid, session_id)
+        self._check_rate_limit("evaluate", user.uid, self._settings.llm_eval_rate_limit_max)
+        session = self._require_session(user.uid, session_id)
         flashcard = await self._load_flashcard(payload.question_id)
         session_settings = self._settings.model_copy(
             update={
@@ -124,12 +131,21 @@ class EvaluationService:
             raise LlmEvaluationError()
         if not isinstance(grade, LlmGrade):
             grade = LlmGrade.model_validate(grade)
+
+        credits_received = self.__credits_calculator(grade.score)
+        if credits_received > 0:
+            await asyncio.to_thread(self._award_credits, user, credits_received)
+
         return EvaluationResult(
             score=grade.score,
-            credits_received=self.__credits_calculator(grade.score),
+            credits_received=credits_received,
             verdict=grade.verdict,
             explanation=grade.explanation,
         )
+
+    def _award_credits(self, user: AuthenticatedUser, credits: int) -> None:
+        user_service = self._user_service or UserService(get_firestore())
+        user_service.add_credits(user, credits, self.CREDITS_REASON)
 
     async def _load_flashcard(self, flashcard_id: str) -> FlashcardResponse:
         try:

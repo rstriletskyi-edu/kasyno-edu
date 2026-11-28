@@ -61,7 +61,9 @@ class UserService:
         @firestore.transactional
         def modify(transaction, reference, signed_amount):
             snapshot = reference.get(transaction=transaction)
-            data = snapshot.to_dict() if snapshot.exists else {}
+            if not snapshot.exists:
+                raise ProfileUnavailableError()
+            data = snapshot.to_dict() or {}
             current_credits = data.get("credits", 0)
             transaction.update(
                 reference,
@@ -73,8 +75,11 @@ class UserService:
                 self._transaction_document(signed_amount, reason),
             )
 
-        transaction = self._db.transaction()
-        modify(transaction, user_reference, signed_amount)
+        try:
+            transaction = self._db.transaction()
+            modify(transaction, user_reference, signed_amount)
+        except (GoogleAPICallError, RetryError, GoogleAuthError):
+            raise ProfileUnavailableError() from None
 
     def add_credits(
         self,

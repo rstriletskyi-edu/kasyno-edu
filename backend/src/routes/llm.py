@@ -73,6 +73,7 @@ async def verify_llm_session(
         422: {"description": "Invalid grading request"},
         429: {"description": "Too many LLM requests"},
         502: {"description": "LLM provider failed"},
+        503: {"description": "User profile or Firestore service unavailable"},
         504: {"description": "LLM evaluation timed out"},
     },
 )
@@ -84,4 +85,4 @@ async def evaluate_answer(
     service: EvaluationService = Depends(get_evaluation_service),
 ) -> EvaluationResult:
     response.headers["Cache-Control"] = "no-store"
-    return await service.evaluate(user.uid, session_id, payload)
+    return await service.evaluate(user, session_id, payload)
