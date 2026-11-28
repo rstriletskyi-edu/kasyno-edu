@@ -79,3 +79,4 @@ terraform.tfvars
 
 
 /infra-dev/ansible/secrets/*
+/infra-prod/
